@@ -29,6 +29,12 @@ jobs:
         run: sudo xcode-select --switch /Applications/Xcode_14.0.1.app
       - name: CMake
         run: rake cmake
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-ios-cmake
+          path: build/ios # or path/to/artifact
+        if: ${{ matrix.platform }} == 'iOS'
       - name: Build
         run: rake build
       - name: Install

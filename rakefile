@@ -382,7 +382,7 @@ def build_config
 end
 
 def build_target(tgt, wrapper = '')
-  %Q{#{wrapper} cmake --build "#{build_tree}" #{build_config} #{tgt ? "--target #{tgt}" : ''}}
+  %Q{#{wrapper} cmake --build "#{build_tree}" --verbose #{build_config} #{tgt ? "--target #{tgt}" : ''}}
 end
 
 def bump_copyright_year(regex = '2008-[0-9]{4} the Urho3D project')
