@@ -9,6 +9,8 @@ jobs:
   android:
     name: 📱
     runs-on: ubuntu-latest
+    # Disabled temporarily: NEL
+    if: false
     strategy:
       fail-fast: false
       matrix:

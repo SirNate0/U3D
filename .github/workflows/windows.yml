@@ -9,6 +9,8 @@ jobs:
   windows:
     name: 🏁
     runs-on: windows-latest
+    # Disabled temporarily: NEL
+    if: false
     strategy:
       fail-fast: false
       matrix:
