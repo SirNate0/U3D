@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: debug-ios-cmake
-          path: build/ios # or path/to/artifact
+          path: /Users/runner/work/U3D/U3D/build/ci # or path/to/artifact
         if: ${{ matrix.platform }} == 'iOS'
       - name: Build
         run: rake build
