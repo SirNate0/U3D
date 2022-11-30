@@ -56,6 +56,7 @@ task :cmake => [:init] do
     var.chomp!
     build_options = "#{build_options} -D #{var}=#{ENV[var]}" if ENV[var]
   }
+  print %Q{#{script} "#{build_tree}" #{build_options}}
   system %Q{#{script} "#{build_tree}" #{build_options}} or abort
 end
 

@@ -56,4 +56,7 @@ done
 # Create project with the chosen CMake generator and toolchain
 cmake -E make_directory "$BUILD" && cmake -E chdir "$BUILD" cmake ${OPTS[*]} $@ "$SOURCE" && post_cmake
 
+# Print variables, may fail, so or with true
+cmake -E chdir "$BUILD" cmake -LAH || true
+
 # vi: set ts=4 sw=4 expandtab:
