@@ -466,8 +466,7 @@ if (XCODE)
 #        set (EXCLUDE_FROM_ALL EXCLUDE_FROM_ALL)
 #        list (APPEND TARGET_PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES)
 #        if (URHO3D_64BIT AND ARM)
-#            list (APPEND TARGET_PROPERTIES XCODE_ATTRIBUTE_ARCHS arm64)     # The ARCHS_STANDARD builds armv7 first, but we 
-have setup LuaJIT target detection to detect arm64 as the default arch so we override Xcode to build arm64 first
+#            list (APPEND TARGET_PROPERTIES XCODE_ATTRIBUTE_ARCHS arm64)     # The ARCHS_STANDARD builds armv7 first, but we have setup LuaJIT target detection to detect arm64 as the default arch so we override Xcode to build arm64 first
 #        endif ()
 #    endif ()
 endif ()
