@@ -34,6 +34,7 @@ jobs:
       - name: Select Xcode
         # https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md#xcode
         run: sudo xcode-select --switch /Applications/Xcode_14.0.1.app
+        if: false
       - name: CMake
         run: rake cmake
       - name: Build
