@@ -336,6 +336,31 @@ task :style do
   puts 'Passed the style checks'
 end
 
+
+task :fix_style do
+  system 'bash', '-c', %q{
+    git diff --name-only HEAD~ -- Source \
+      |grep -v ThirdParty \
+      |grep -P '\.(?:c|cpp|h|hpp)' \
+      |xargs clang-format -i -Werror 2>&1 \
+      |tee build/did-clang-format.out \
+      && exit ${PIPESTATUS[3]}
+  } or abort 'Failed to pass style checks'
+  puts 'Passed the style checks'
+end
+
+task :fix_tidy do
+  system 'bash', '-c', %q{
+    git diff --name-only HEAD~ -- Source \
+      |grep -v ThirdParty \
+      |grep -P '\.(?:c|cpp|h|hpp)' \
+      |xargs clang-tidy -warnings-as-errors='*' 2>&1 \
+      |tee build/did-clang-tidy.out \
+      && exit ${PIPESTATUS[3]}
+  } or abort 'Failed to pass style checks'
+  puts 'Passed the style checks'
+end
+
 task :source_checksum do
   require 'digest'
   sha256_final = Digest::SHA256.new
