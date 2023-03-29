@@ -7359,7 +7359,8 @@ static void Register_StaticModel(asIScriptEngine* engine)
     #endif
 
     // virtual void StaticModel::SetModel(Model* model)
-    // Not registered because have @manualbind mark
+    engine->RegisterObjectMethod("StaticModel", "void SetModel(Model@+)", AS_METHODPR(StaticModel, SetModel, (Model*), void), AS_CALL_THISCALL);
+    engine->RegisterObjectMethod("StaticModel", "void set_model(Model@+)", AS_METHODPR(StaticModel, SetModel, (Model*), void), AS_CALL_THISCALL);
 }
 
 // explicit TerrainPatch::TerrainPatch(Context* context)

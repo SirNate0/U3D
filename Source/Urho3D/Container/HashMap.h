@@ -29,6 +29,7 @@
 
 #include <cassert>
 #include <initializer_list>
+#include <type_traits>
 
 namespace Urho3D
 {
@@ -292,7 +293,9 @@ public:
     }
 
     /// Test for equality with another hash map.
-    bool operator ==(const HashMap<T, U>& rhs) const
+    template<class V=U>
+    bool operator ==(std::enable_if_t<std::is_same_v<std::void_t<decltype(std::declval<const U&>() != std::declval<const V&>())>, void>,
+                     const HashMap<T, V>&> rhs) const
     {
         if (rhs.Size() != Size())
             return false;

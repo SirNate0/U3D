@@ -194,6 +194,7 @@ namespace Urho3D
 {
 
 /// The function that actually handles the string formatting. Per the fmt documentation, splitting it this way should improve compile time and reduce binary code size compared to a fully parameterized version. https://fmt.dev/9.1.0/api.html#argument-lists
+/// @nobind
 inline String VFormatString(fmt::string_view format, fmt::format_args args)
 {
     auto str = fmt::vformat(format, args);
@@ -201,6 +202,7 @@ inline String VFormatString(fmt::string_view format, fmt::format_args args)
 }
 
 /// Return a formatted string following a curly brace style format syntax. https://fmt.dev/9.1.0/syntax.html
+/// @nobind
 template<typename S, typename... Args>
 inline String FormatString(const S& format, Args&&... args)
 {

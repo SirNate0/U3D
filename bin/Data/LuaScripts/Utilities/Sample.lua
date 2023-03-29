@@ -24,7 +24,7 @@ function SampleStart()
     if GetPlatform() == "Android" or GetPlatform() == "iOS" or input.touchEmulation then
         -- On mobile platform, enable touch by adding a screen joystick
         InitTouchInput()
-    elseif input:GetNumJoysticks() == 0 then
+    elseif input.numJoysticks == 0 then
         -- On desktop platform, do not detect touch when we already got a joystick
         SubscribeToEvent("TouchBegin", "HandleTouchBegin")
     end
@@ -68,7 +68,7 @@ function SampleInitMouseMode(mode)
         end
 
         if useMouseMode_ ~= MM_ABSOLUTE then
-            input.mouseMode = useMouseMode_
+--             input.mouseMode = useMouseMode_
 
             if console ~= nil and console.visible then
                 input:SetMouseMode(MM_ABSOLUTE, true)
@@ -98,7 +98,7 @@ function CreateLogo()
     logoSprite = ui.root:CreateChild("Sprite")
 
     -- Set logo sprite texture
-    logoSprite:SetTexture(logoTexture)
+    logoSprite.texture = (logoTexture)
 
     local textureWidth = logoTexture.width
     local textureHeight = logoTexture.height
@@ -124,7 +124,7 @@ end
 
 function SetWindowTitleAndIcon()
     local icon = cache:GetResource("Image", "Textures/UrhoIcon.png")
-    graphics:SetWindowIcon(icon)
+    graphics.windowIcon = (icon)
     graphics.windowTitle = "Urho3D Sample"
 end
 
@@ -136,12 +136,12 @@ function CreateConsoleAndDebugHud()
     end
 
     -- Create console
-    engine:CreateConsole()
+    console = engine:CreateConsole()
     console.defaultStyle = uiStyle
     console.background.opacity = 0.8
 
     -- Create debug HUD
-    engine:CreateDebugHud()
+    debugHud = engine:CreateDebugHud()
     debugHud.defaultStyle = uiStyle
 end
 

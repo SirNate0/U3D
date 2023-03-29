@@ -24918,7 +24918,8 @@ template <class T> void RegisterMembers_Skybox(asIScriptEngine* engine, const ch
     RegisterMembers_StaticModel<T>(engine, className);
 
     // virtual void StaticModel::SetModel(Model* model)
-    // Not registered because have @manualbind mark
+    engine->RegisterObjectMethod(className, "void SetModel(Model@+)", AS_METHODPR(T, SetModel, (Model*), void), AS_CALL_THISCALL);
+    engine->RegisterObjectMethod(className, "void set_model(Model@+)", AS_METHODPR(T, SetModel, (Model*), void), AS_CALL_THISCALL);
 
     #ifdef REGISTER_MEMBERS_MANUAL_PART_Skybox
         REGISTER_MEMBERS_MANUAL_PART_Skybox();
@@ -24932,8 +24933,6 @@ template <class T> void RegisterMembers_StaticModelGroup(asIScriptEngine* engine
 
     // const VariantVector& StaticModelGroup::GetNodeIDsAttr() const
     // Error: type "const VariantVector&" can not automatically bind
-    // virtual void StaticModel::SetModel(Model* model)
-    // Not registered because have @manualbind mark
     // void StaticModelGroup::SetNodeIDsAttr(const VariantVector& value)
     // Error: type "const VariantVector&" can not automatically bind
 
@@ -24953,6 +24952,10 @@ template <class T> void RegisterMembers_StaticModelGroup(asIScriptEngine* engine
 
     // void StaticModelGroup::RemoveInstanceNode(Node* node)
     engine->RegisterObjectMethod(className, "void RemoveInstanceNode(Node@+)", AS_METHODPR(T, RemoveInstanceNode, (Node*), void), AS_CALL_THISCALL);
+
+    // virtual void StaticModel::SetModel(Model* model)
+    engine->RegisterObjectMethod(className, "void SetModel(Model@+)", AS_METHODPR(T, SetModel, (Model*), void), AS_CALL_THISCALL);
+    engine->RegisterObjectMethod(className, "void set_model(Model@+)", AS_METHODPR(T, SetModel, (Model*), void), AS_CALL_THISCALL);
 
     #ifdef REGISTER_MEMBERS_MANUAL_PART_StaticModelGroup
         REGISTER_MEMBERS_MANUAL_PART_StaticModelGroup();

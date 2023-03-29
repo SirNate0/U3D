@@ -30,6 +30,7 @@
 #include <initializer_list>
 #include <new>
 #include <utility>
+#include <type_traits>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -157,7 +158,9 @@ public:
     }
 
     /// Test for equality with another vector.
-    bool operator ==(const Vector<T>& rhs) const
+    template<class U=T>
+    bool operator ==(std::enable_if_t<std::is_same_v<std::void_t<decltype(std::declval<const U&>() != std::declval<const T&>())>, void>,
+                     const Vector<U>&> rhs) const
     {
         if (rhs.size_ != size_)
             return false;
@@ -174,7 +177,9 @@ public:
     }
 
     /// Test for inequality with another vector.
-    bool operator !=(const Vector<T>& rhs) const
+    template<class U=T>
+    bool operator !=(std::enable_if_t<std::is_same_v<std::void_t<decltype(std::declval<const U&>() != std::declval<const T&>())>, void>,
+                     const Vector<T>&> rhs) const
     {
         if (rhs.size_ != size_)
             return true;
@@ -775,7 +780,9 @@ public:
     }
 
     /// Test for equality with another vector.
-    bool operator ==(const PODVector<T>& rhs) const
+    template<class U=T>
+    bool operator ==(std::enable_if_t<std::is_same_v<std::void_t<decltype(std::declval<const U&>() != std::declval<const T&>())>, void>,
+                     const PODVector<T>&> rhs) const
     {
         if (rhs.size_ != size_)
             return false;
@@ -792,7 +799,9 @@ public:
     }
 
     /// Test for inequality with another vector.
-    bool operator !=(const PODVector<T>& rhs) const
+    template<class U=T>
+    bool operator !=(std::enable_if_t<std::is_same_v<std::void_t<decltype(std::declval<const U&>() != std::declval<const T&>())>, void>,
+                     const PODVector<T>&> rhs) const
     {
         if (rhs.size_ != size_)
             return true;

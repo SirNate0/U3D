@@ -47,6 +47,7 @@ extern "C"
 
 #include "../DebugNew.h"
 
+#ifdef URHO3D_OLDLUA
 extern int tolua_AudioLuaAPI_open(lua_State*);
 extern int tolua_CoreLuaAPI_open(lua_State*);
 extern int tolua_EngineLuaAPI_open(lua_State*);
@@ -79,6 +80,10 @@ extern int tolua_UILuaAPI_open(lua_State*);
 extern int tolua_Urho2DLuaAPI_open(lua_State*);
 #endif
 extern int tolua_LuaScriptLuaAPI_open(lua_State*);
+#else
+extern int bindlua_NEL(lua_State*,Urho3D::Context*);
+extern Urho3D::Context* bindlua_NEL_GetContext(lua_State*);
+#endif
 
 namespace Urho3D
 {
@@ -100,9 +105,10 @@ LuaScript::LuaScript(Context* context) :
     lua_atpanic(luaState_, &LuaScript::AtPanic);
 
     luaL_openlibs(luaState_);
+
     RegisterLoader();
     ReplacePrint();
-
+#ifdef URHO3D_OLDLUA
     tolua_MathLuaAPI_open(luaState_);
     tolua_CoreLuaAPI_open(luaState_);
     tolua_IOLuaAPI_open(luaState_);
@@ -137,6 +143,9 @@ LuaScript::LuaScript(Context* context) :
     tolua_LuaScriptLuaAPI_open(luaState_);
 
     SetContext(luaState_, context_);
+#else
+    bindlua_NEL(luaState_, context_);
+#endif
 
     eventInvoker_ = new LuaScriptEventInvoker(context_);
     coroutineUpdate_ = GetFunction("coroutine.update");
@@ -371,7 +380,14 @@ int LuaScript::Loader(lua_State* L)
         return 1;
 #endif
 
+#ifdef URHO3D_OLDLUA
     auto* cache = ::GetContext(L)->GetSubsystem<ResourceCache>();
+#else
+    auto* context = bindlua_NEL_GetContext(L);
+    assert(context);
+    auto* cache = context->GetSubsystem<ResourceCache>();
+    assert(cache);
+#endif
 
     // Attempt to get .luc file first
     auto* lucFile = cache->GetResource<LuaFile>(fileName + ".luc", false);

@@ -32,6 +32,7 @@ class Drawable2D;
 class IndexBuffer;
 class Material;
 class Technique;
+class Texture2D;
 class VertexBuffer;
 struct FrameInfo;
 struct SourceBatch2D;

@@ -131,7 +131,7 @@ template <typename T> void* ToluaToPODVector(double /*overload*/, lua_State* L, 
 {
     if (!lua_istable(L, narg))
         return nullptr;
-    static PODVector<T> result;
+    static Vector<T> result;
     result.Clear();
     result.Resize((unsigned)lua_objlen(L, narg));
     for (unsigned i = 0; i < result.Size(); ++i)
@@ -153,7 +153,7 @@ template <typename T> int ToluaPushPODVector(lua_State* L, void* data, const cha
 template <typename T> int ToluaPushPODVector(const char* /*overload*/, lua_State* L, void* data, const char* type)
 {
     lua_newtable(L);
-    const PODVector<T>& vector = *static_cast<const PODVector<T>*>(data);
+    const Vector<T>& vector = *static_cast<const Vector<T>*>(data);
     for (unsigned i = 0; i < vector.Size(); ++i)
     {
         tolua_pushusertype(L, vector[i], type);
@@ -166,7 +166,7 @@ template <typename T> int ToluaPushPODVector(const char* /*overload*/, lua_State
 template <typename T> int ToluaPushPODVector(double /*overload*/, lua_State* L, void* data, const char* /*type*/)
 {
     lua_newtable(L);
-    const PODVector<T>& vector = *static_cast<const PODVector<T>*>(data);
+    const Vector<T>& vector = *static_cast<const Vector<T>*>(data);
     for (unsigned i = 0; i < vector.Size(); ++i)
     {
         lua_pushnumber(L, vector[i]);

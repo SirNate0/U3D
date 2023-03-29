@@ -317,19 +317,20 @@ if (URHO3D_LUA)
             list (REMOVE_ITEM API_PKG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/LuaScript/pkgs/${DIR}LuaAPI.pkg)
         endif ()
     endforeach ()
-    foreach (API_PKG_FILE ${API_PKG_FILES})
-        get_filename_component (NAME ${API_PKG_FILE} NAME)
-        string (REGEX REPLACE LuaAPI\\.pkg$ "" DIR ${NAME})
-        set (GEN_CPP_FILE ${CMAKE_CURRENT_BINARY_DIR}/LuaScript/generated/${DIR}LuaAPI.cpp)
-        list (APPEND LUA_GEN_CPP_FILES ${GEN_CPP_FILE})
-        file (GLOB PKG_FILES LuaScript/pkgs/${DIR}/*.pkg)
-        add_custom_command (OUTPUT ${GEN_CPP_FILE}
-            COMMAND ${CMAKE_BINARY_DIR}/bin/tool/tolua++ -E ${CMAKE_PROJECT_NAME} -L ToCppHook.lua -o ${GEN_CPP_FILE} ${NAME}
-            DEPENDS tolua++bin ${API_PKG_FILE} ${PKG_FILES} LuaScript/pkgs/ToCppHook.lua 
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/LuaScript/pkgs
-            COMMENT "Generating tolua++ API binding on the fly for ${DIR}")
-    endforeach ()
-    source_group ("Source Files\\LuaScript\\Generated" FILES ${LUA_GEN_CPP_FILES})
+# NEL
+#     foreach (API_PKG_FILE ${API_PKG_FILES})
+#         get_filename_component (NAME ${API_PKG_FILE} NAME)
+#         string (REGEX REPLACE LuaAPI\\.pkg$ "" DIR ${NAME})
+#         set (GEN_CPP_FILE ${CMAKE_CURRENT_BINARY_DIR}/LuaScript/generated/${DIR}LuaAPI.cpp)
+#         list (APPEND LUA_GEN_CPP_FILES ${GEN_CPP_FILE})
+#         file (GLOB PKG_FILES LuaScript/pkgs/${DIR}/*.pkg)
+#         add_custom_command (OUTPUT ${GEN_CPP_FILE}
+#             COMMAND ${CMAKE_BINARY_DIR}/bin/tool/tolua++ -E ${CMAKE_PROJECT_NAME} -L ToCppHook.lua -o ${GEN_CPP_FILE} ${NAME}
+#             DEPENDS tolua++bin ${API_PKG_FILE} ${PKG_FILES} LuaScript/pkgs/ToCppHook.lua 
+#             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/LuaScript/pkgs
+#             COMMENT "Generating tolua++ API binding on the fly for ${DIR}")
+#     endforeach ()
+#     source_group ("Source Files\\LuaScript\\Generated" FILES ${LUA_GEN_CPP_FILES})
     if (URHO3D_LINT)
         execute_process (COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/.clang-tidy ${CMAKE_CURRENT_BINARY_DIR}/LuaScript/generated)
     endif ()

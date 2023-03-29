@@ -33,8 +33,10 @@ namespace Urho3D
 class Animation;
 class AnimatedModel;
 class Deserializer;
+class Node;
 class Serializer;
 class Skeleton;
+class StringHash;
 struct AnimationTrack;
 struct Bone;
 

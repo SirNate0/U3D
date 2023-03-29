@@ -107,7 +107,7 @@ template <> void* ToluaToPODVector<bool>(double /*overload*/, lua_State* L, int 
 {
     if (!lua_istable(L, narg))
         return nullptr;
-    static PODVector<bool> result;
+    static Vector<bool> result;
     result.Clear();
     result.Resize((unsigned)lua_objlen(L, narg));
     for (unsigned i = 0; i < result.Size(); ++i)
@@ -122,7 +122,7 @@ template <> void* ToluaToPODVector<bool>(double /*overload*/, lua_State* L, int 
 template <> int ToluaPushPODVector<bool>(double /*overload*/, lua_State* L, void* data, const char* /*type*/)
 {
     lua_newtable(L);
-    const PODVector<bool>& vector = *static_cast<const PODVector<bool>*>(data);
+    const Vector<bool>& vector = *static_cast<const Vector<bool>*>(data);
     for (unsigned i = 0; i < vector.Size(); ++i)
     {
         lua_pushboolean(L, vector[i]);
