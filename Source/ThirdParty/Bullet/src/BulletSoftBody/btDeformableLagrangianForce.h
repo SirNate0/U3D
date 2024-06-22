@@ -177,7 +177,7 @@ public:
 			double dphi = 0;
 			for (int i = 0; i < dx.size(); ++i)
 			{
-				dphi += dphi_dx[i].dot(dx[i]);
+                dphi += (double)dphi_dx[i].dot(dx[i]);
 			}
 
 			for (int i = 0; i < m_softBodies.size(); ++i)
@@ -339,9 +339,9 @@ public:
 			for (int i = 0; i < df.size(); ++i)
 			{
 				btVector3 error_vector = f1[i] - f2[i] - 2 * df[i];
-				error += error_vector.length2();
+                error += (double)error_vector.length2();
 			}
-			error = btSqrt(error);
+            error = sqrt(error);
 			errors.push_back(error);
 			std::cout << "Iteration = " << it << ", error = " << error << std::endl;
 		}

@@ -1921,7 +1921,7 @@ void btMultiBody::fillConstraintJacobianMultiDof(int link,
 		// calculate required normals & positions in the local frames.
         for (int a = 0; a < numLinksChildToRoot; a++)
         {
-            int i = links[numLinksChildToRoot-1-a];
+            int i = int(links[numLinksChildToRoot-1-a]);
         	// transform to local frame
 			const int parent = m_links[i].m_parent;
 			const btMatrix3x3 mtx(m_links[i].m_cachedRotParentToThis);
@@ -2192,6 +2192,7 @@ int btMultiBody::calculateSerializeBufferSize() const
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 const char *btMultiBody::serialize(void *dataBuffer, class btSerializer *serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btMultiBodyData *mbd = (btMultiBodyData *)dataBuffer;
 	getBasePos().serialize(mbd->m_baseWorldPosition);
 	getWorldToBaseRot().inverse().serialize(mbd->m_baseWorldOrientation);
@@ -2281,6 +2282,6 @@ const char *btMultiBody::serialize(void *dataBuffer, class btSerializer *seriali
 #ifdef BT_USE_DOUBLE_PRECISION
 	memset(mbd->m_padding, 0, sizeof(mbd->m_padding));
 #endif
-
+#endif
 	return btMultiBodyDataName;
 }

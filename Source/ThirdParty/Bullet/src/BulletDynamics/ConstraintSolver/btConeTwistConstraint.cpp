@@ -816,7 +816,7 @@ void btConeTwistConstraint::computeConeLimitInfo(const btQuaternion& qCone,
 		vSwingAxis.normalize();
 #if 0
         // non-zero twist?! this should never happen.
-       btAssert(fabs(vSwingAxis.x()) <= SIMD_EPSILON));
+       btAssert(btFabs(vSwingAxis.x()) <= SIMD_EPSILON));
 #endif
 
 		// Compute limit for given swing. tricky:
@@ -837,23 +837,23 @@ void btConeTwistConstraint::computeConeLimitInfo(const btQuaternion& qCone,
 		// Do the math and it should be clear.
 
 		swingLimit = m_swingSpan1;  // if xEllipse == 0, we have a pure vSwingAxis.z rotation: just use swingspan1
-		if (fabs(xEllipse) > SIMD_EPSILON)
+        if (btFabs(xEllipse) > SIMD_EPSILON)
 		{
 			btScalar surfaceSlope2 = (yEllipse * yEllipse) / (xEllipse * xEllipse);
 			btScalar norm = 1 / (m_swingSpan2 * m_swingSpan2);
 			norm += surfaceSlope2 / (m_swingSpan1 * m_swingSpan1);
 			btScalar swingLimit2 = (1 + surfaceSlope2) / norm;
-			swingLimit = std::sqrt(swingLimit2);
+            swingLimit = btSqrt(swingLimit2);
 		}
 
 		// test!
 		/*swingLimit = m_swingSpan2;
-		if (fabs(vSwingAxis.z()) > SIMD_EPSILON)
+        if (btFabs(vSwingAxis.z()) > SIMD_EPSILON)
 		{
 		btScalar mag_2 = m_swingSpan1*m_swingSpan1 + m_swingSpan2*m_swingSpan2;
 		btScalar sinphi = m_swingSpan2 / sqrt(mag_2);
 		btScalar phi = asin(sinphi);
-		btScalar theta = atan2(fabs(vSwingAxis.y()),fabs(vSwingAxis.z()));
+        btScalar theta = atan2(btFabs(vSwingAxis.y()),fabs(vSwingAxis.z()));
 		btScalar alpha = 3.14159f - theta - phi;
 		btScalar sinalpha = sin(alpha);
 		swingLimit = m_swingSpan1 * sinphi/sinalpha;
@@ -882,13 +882,13 @@ btVector3 btConeTwistConstraint::GetPointForAngle(btScalar fAngleInRadians, btSc
 	// Do the math and it should be clear.
 
 	btScalar swingLimit = m_swingSpan1;  // if xEllipse == 0, just use axis b (1)
-	if (fabs(xEllipse) > SIMD_EPSILON)
+    if (btFabs(xEllipse) > SIMD_EPSILON)
 	{
 		btScalar surfaceSlope2 = (yEllipse * yEllipse) / (xEllipse * xEllipse);
 		btScalar norm = 1 / (m_swingSpan2 * m_swingSpan2);
 		norm += surfaceSlope2 / (m_swingSpan1 * m_swingSpan1);
 		btScalar swingLimit2 = (1 + surfaceSlope2) / norm;
-		swingLimit = std::sqrt(swingLimit2);
+        swingLimit = btSqrt(swingLimit2);
 	}
 
 	// convert into point in constraint space:
@@ -939,7 +939,7 @@ void btConeTwistConstraint::adjustSwingAxisToUseEllipseNormal(btVector3& vSwingA
 	btScalar z = vSwingAxis.y();
 
 	// do the math...
-	if (fabs(z) > SIMD_EPSILON)  // avoid division by 0. and we don't need an update if z == 0.
+    if (btFabs(z) > SIMD_EPSILON)  // avoid division by 0. and we don't need an update if z == 0.
 	{
 		// compute gradient/normal of ellipse surface at current "point"
 		btScalar grad = y / z;
@@ -947,9 +947,9 @@ void btConeTwistConstraint::adjustSwingAxisToUseEllipseNormal(btVector3& vSwingA
 
 		// adjust y/z to represent normal at point (instead of vector to point)
 		if (y > 0)
-			y = fabs(grad * z);
+            y = btFabs(grad * z);
 		else
-			y = -fabs(grad * z);
+            y = -btFabs(grad * z);
 
 		// convert ellipse direction back to swing axis
 		vSwingAxis.setZ(-y);
@@ -993,7 +993,7 @@ void btConeTwistConstraint::setMotorTargetInConstraintSpace(const btQuaternion& 
 			btVector3 swingAxis;
 			computeConeLimitInfo(qTargetCone, swingAngle, swingAxis, swingLimit);
 
-			if (fabs(swingAngle) > SIMD_EPSILON)
+            if (btFabs(swingAngle) > SIMD_EPSILON)
 			{
 				if (swingAngle > swingLimit * softness)
 					swingAngle = swingLimit * softness;
@@ -1010,7 +1010,7 @@ void btConeTwistConstraint::setMotorTargetInConstraintSpace(const btQuaternion& 
 			btVector3 twistAxis;
 			computeTwistLimitInfo(qTargetTwist, twistAngle, twistAxis);
 
-			if (fabs(twistAngle) > SIMD_EPSILON)
+            if (btFabs(twistAngle) > SIMD_EPSILON)
 			{
 				// eddy todo: limitSoftness used here???
 				if (twistAngle > m_twistSpan * softness)

@@ -830,6 +830,9 @@ public:
 	Vertex* vertexList;
 
 	void compute(const void* coords, bool doubleCoords, int stride, int count);
+#ifdef BT_USE_FIXED_PRECISION
+    void compute(const btScalar* coords, int stride, int count);
+#endif
 
 	btVector3 getCoordinates(const Vertex* v);
 
@@ -1953,6 +1956,99 @@ public:
 	}
 };
 
+#ifdef BT_USE_FIXED_PRECISION
+void btConvexHullInternal::compute(const btScalar* coords, int stride, int count)
+{
+    btVector3 min(btScalar(1e30), btScalar(1e30), btScalar(1e30)), max(btScalar(-1e30), btScalar(-1e30), btScalar(-1e30));
+    const char* ptr = (const char*)coords;
+    for (int i = 0; i < count; i++)
+    {
+        const btScalar* v = (const btScalar*)ptr;
+        btVector3 p((btScalar)v[0], (btScalar)v[1], (btScalar)v[2]);
+        ptr += stride;
+        min.setMin(p);
+        max.setMax(p);
+    }
+
+    btVector3 s = max - min;
+    maxAxis = s.maxAxis();
+    minAxis = s.minAxis();
+    if (minAxis == maxAxis)
+    {
+        minAxis = (maxAxis + 1) % 3;
+    }
+    medAxis = 3 - maxAxis - minAxis;
+
+    s /= btScalar(10216);
+    if (((medAxis + 1) % 3) != maxAxis)
+    {
+        s *= -1;
+    }
+    scaling = s;
+
+    if (s[0] != 0)
+    {
+        s[0] = btScalar(1) / s[0];
+    }
+    if (s[1] != 0)
+    {
+        s[1] = btScalar(1) / s[1];
+    }
+    if (s[2] != 0)
+    {
+        s[2] = btScalar(1) / s[2];
+    }
+
+    center = (min + max) * btScalar(0.5);
+
+    btAlignedObjectArray<Point32> points;
+    points.resize(count);
+    ptr = (const char*)coords;
+    for (int i = 0; i < count; i++)
+    {
+        const btScalar* v = (const btScalar*)ptr;
+        btVector3 p((btScalar)v[0], (btScalar)v[1], (btScalar)v[2]);
+        ptr += stride;
+        p = (p - center) * s;
+        points[i].x = (int32_t)p[medAxis];
+        points[i].y = (int32_t)p[maxAxis];
+        points[i].z = (int32_t)p[minAxis];
+        points[i].index = i;
+    }
+
+    points.quickSort(pointCmp());
+
+    vertexPool.reset();
+    vertexPool.setArraySize(count);
+    originalVertices.resize(count);
+    for (int i = 0; i < count; i++)
+    {
+        Vertex* v = vertexPool.newObject();
+        v->edges = NULL;
+        v->point = points[i];
+        v->copy = -1;
+        originalVertices[i] = v;
+    }
+
+    points.clear();
+
+    edgePool.reset();
+    edgePool.setArraySize(6 * count);
+
+    usedEdgePairs = 0;
+    maxUsedEdgePairs = 0;
+
+    mergeStamp = -3;
+
+    IntermediateHull hull;
+    computeInternal(0, count, hull);
+    vertexList = hull.minXy;
+#ifdef DEBUG_CONVEX_HULL
+    printf("max. edges %d (3v = %d)", maxUsedEdgePairs, 3 * count);
+#endif
+}
+#endif
+
 void btConvexHullInternal::compute(const void* coords, bool doubleCoords, int stride, int count)
 {
 	btVector3 min(btScalar(1e30), btScalar(1e30), btScalar(1e30)), max(btScalar(-1e30), btScalar(-1e30), btScalar(-1e30));
@@ -2758,3 +2854,115 @@ btScalar btConvexHullComputer::compute(const void* coords, bool doubleCoords, in
 
 	return shift;
 }
+
+#ifdef BT_USE_FIXED_PRECISION
+btScalar btConvexHullComputer::compute(const btScalar* coords, int stride, int count, btScalar shrink, btScalar shrinkClamp)
+{
+
+    if (count <= 0)
+    {
+        vertices.clear();
+        edges.clear();
+        faces.clear();
+        return 0;
+    }
+
+    btConvexHullInternal hull;
+    hull.compute(coords, stride, count);
+
+    btScalar shift = 0;
+    if ((shrink > 0) && ((shift = hull.shrink(shrink, shrinkClamp)) < 0))
+    {
+        vertices.clear();
+        edges.clear();
+        faces.clear();
+        return shift;
+    }
+
+    vertices.resize(0);
+    original_vertex_index.resize(0);
+    edges.resize(0);
+    faces.resize(0);
+
+    btAlignedObjectArray<btConvexHullInternal::Vertex*> oldVertices;
+    getVertexCopy(hull.vertexList, oldVertices);
+    int copied = 0;
+    while (copied < oldVertices.size())
+    {
+        btConvexHullInternal::Vertex* v = oldVertices[copied];
+        vertices.push_back(hull.getCoordinates(v));
+        original_vertex_index.push_back(v->point.index);
+        btConvexHullInternal::Edge* firstEdge = v->edges;
+        if (firstEdge)
+        {
+            int firstCopy = -1;
+            int prevCopy = -1;
+            btConvexHullInternal::Edge* e = firstEdge;
+            do
+            {
+                if (e->copy < 0)
+                {
+                    int s = edges.size();
+                    edges.push_back(Edge());
+                    edges.push_back(Edge());
+                    Edge* c = &edges[s];
+                    Edge* r = &edges[s + 1];
+                    e->copy = s;
+                    e->reverse->copy = s + 1;
+                    c->reverse = 1;
+                    r->reverse = -1;
+                    c->targetVertex = getVertexCopy(e->target, oldVertices);
+                    r->targetVertex = copied;
+#ifdef DEBUG_CONVEX_HULL
+                    printf("      CREATE: Vertex *%d has edge to *%d\n", copied, c->getTargetVertex());
+#endif
+                }
+                if (prevCopy >= 0)
+                {
+                    edges[e->copy].next = prevCopy - e->copy;
+                }
+                else
+                {
+                    firstCopy = e->copy;
+                }
+                prevCopy = e->copy;
+                e = e->next;
+            } while (e != firstEdge);
+            edges[firstCopy].next = prevCopy - firstCopy;
+        }
+        copied++;
+    }
+
+    for (int i = 0; i < copied; i++)
+    {
+        btConvexHullInternal::Vertex* v = oldVertices[i];
+        btConvexHullInternal::Edge* firstEdge = v->edges;
+        if (firstEdge)
+        {
+            btConvexHullInternal::Edge* e = firstEdge;
+            do
+            {
+                if (e->copy >= 0)
+                {
+#ifdef DEBUG_CONVEX_HULL
+                    printf("Vertex *%d has edge to *%d\n", i, edges[e->copy].getTargetVertex());
+#endif
+                    faces.push_back(e->copy);
+                    btConvexHullInternal::Edge* f = e;
+                    do
+                    {
+#ifdef DEBUG_CONVEX_HULL
+                        printf("   Face *%d\n", edges[f->copy].getTargetVertex());
+#endif
+                        f->copy = -1;
+                        f = f->reverse->prev;
+                    } while (f != e);
+                }
+                e = e->next;
+            } while (e != firstEdge);
+        }
+    }
+
+    return shift;
+}
+#endif

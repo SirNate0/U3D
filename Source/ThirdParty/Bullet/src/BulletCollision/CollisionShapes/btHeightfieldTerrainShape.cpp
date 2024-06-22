@@ -443,9 +443,9 @@ void gridRaycast(Action_T& quadAction, const btVector3& beginPos, const btVector
 	const int xiStep = rayDirectionFlatX > 0 ? 1 : rayDirectionFlatX < 0 ? -1 : 0;
 	const int ziStep = rayDirectionFlatZ > 0 ? 1 : rayDirectionFlatZ < 0 ? -1 : 0;
 
-	const float infinite = 9999999;
-	const btScalar paramDeltaX = xiStep != 0 ? 1.f / btFabs(rayDirectionFlatX) : infinite;
-	const btScalar paramDeltaZ = ziStep != 0 ? 1.f / btFabs(rayDirectionFlatZ) : infinite;
+    const btScalar infinite = 9999999;
+    const btScalar paramDeltaX = xiStep != 0 ? btRecip(btFabs(rayDirectionFlatX)) : infinite;
+    const btScalar paramDeltaZ = ziStep != 0 ? btRecip(btFabs(rayDirectionFlatZ)) : infinite;
 
 	// pos = param * dir
 	btScalar paramCrossX;  // At which value of `param` we will cross a x-axis lane?

@@ -470,6 +470,11 @@ typedef btVectorX<float> btVectorXf;
 typedef btMatrixX<double> btMatrixXd;
 typedef btVectorX<double> btVectorXd;
 
+#ifdef BT_USE_FIXED_PRECISION
+typedef btMatrixX<btScalar> btMatrixXq;
+typedef btVectorX<btScalar> btVectorXq;
+#endif
+
 #ifdef BT_DEBUG_OSTREAM
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const btMatrixX<T>& mat)
@@ -521,9 +526,19 @@ inline void setElem(btMatrixXf& mat, int row, int col, float val)
 	mat.setElem(row, col, val);
 }
 
+#ifdef BT_USE_FIXED_PRECISION
+inline void setElem(btMatrixXq& mat, int row, int col, btScalar val)
+{
+    mat.setElem(row, col, val);
+}
+#endif
+
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btVectorXu btVectorXd
 #define btMatrixXu btMatrixXd
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btVectorXu btVectorXq
+#define btMatrixXu btMatrixXq
 #else
 #define btVectorXu btVectorXf
 #define btMatrixXu btMatrixXf

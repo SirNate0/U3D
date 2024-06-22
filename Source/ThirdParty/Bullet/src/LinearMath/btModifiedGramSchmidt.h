@@ -10,6 +10,9 @@
 
 #include "btReducedVector.h"
 #include "btAlignedObjectArray.h"
+#ifdef BT_USE_FIXED_PRECISION
+#include "fixedios.hpp"
+#endif
 #include <iostream>
 #include <cmath>
 template<class TV>
@@ -63,14 +66,14 @@ public:
             {
                 if (i == j)
                 {
-                    if (std::abs(1.0-m_out[i].dot(m_out[j])) > eps)// && std::abs(m_out[i].dot(m_out[j])) > eps)
+                    if (btFabs(1.0-m_out[i].dot(m_out[j])) > eps)// && std::abs(m_out[i].dot(m_out[j])) > eps)
                     {
                         printf("vec[%d] is not unit, norm squared = %f\n", i,m_out[i].dot(m_out[j]));
                     }
                 }
                 else
                 {
-                    if (std::abs(m_out[i].dot(m_out[j])) > eps)
+                    if (btFabs(m_out[i].dot(m_out[j])) > eps)
                     {
                         printf("vec[%d] and vec[%d] is not orthogonal, dot product = %f\n", i, j, m_out[i].dot(m_out[j]));
                     }

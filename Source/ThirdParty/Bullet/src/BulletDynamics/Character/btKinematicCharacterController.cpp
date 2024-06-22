@@ -926,7 +926,7 @@ btScalar btKinematicCharacterController::getMaxPenetrationDepth() const
 
 bool btKinematicCharacterController::onGround() const
 {
-	return (fabs(m_verticalVelocity) < SIMD_EPSILON) && (fabs(m_verticalOffset) < SIMD_EPSILON);
+    return (btFabs(m_verticalVelocity) < SIMD_EPSILON) && (btFabs(m_verticalOffset) < SIMD_EPSILON);
 }
 
 void btKinematicCharacterController::setStepHeight(btScalar h)

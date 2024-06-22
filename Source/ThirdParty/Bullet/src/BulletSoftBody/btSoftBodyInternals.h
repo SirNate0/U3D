@@ -49,9 +49,9 @@ static SIMD_FORCE_INLINE btVector3 generateUnitOrthogonalVector(const btVector3&
 	btScalar ux = u.getX();
 	btScalar uy = u.getY();
 	btScalar uz = u.getZ();
-	btScalar ax = std::abs(ux);
-	btScalar ay = std::abs(uy);
-	btScalar az = std::abs(uz);
+    btScalar ax = btFabs(ux);
+    btScalar ay = btFabs(uy);
+    btScalar az = btFabs(uz);
 	btVector3 v;
 	if (ax <= ay && ax <= az)
 		v = btVector3(0, -uz, uy);
@@ -66,7 +66,7 @@ static SIMD_FORCE_INLINE btVector3 generateUnitOrthogonalVector(const btVector3&
 static SIMD_FORCE_INLINE bool proximityTest(const btVector3& x1, const btVector3& x2, const btVector3& x3, const btVector3& x4, const btVector3& normal, const btScalar& mrg, btVector3& bary)
 {
 	btVector3 x43 = x4 - x3;
-	if (std::abs(x43.dot(normal)) > mrg)
+    if (btFabs(x43.dot(normal)) > mrg)
 		return false;
 	btVector3 x13 = x1 - x3;
 	btVector3 x23 = x2 - x3;
@@ -81,7 +81,7 @@ static SIMD_FORCE_INLINE bool proximityTest(const btVector3& x1, const btVector3
 	btScalar w1 = (b1 * a22 - b2 * a12) / det;
 	btScalar w2 = (b2 * a11 - b1 * a12) / det;
 	btScalar w3 = 1 - w1 - w2;
-	btScalar delta = mrg / std::sqrt(0.5 * std::abs(x13.cross(x23).safeNorm()));
+    btScalar delta = mrg / btSqrt(0.5 * btFabs(x13.cross(x23).safeNorm()));
 	bary = btVector3(w1, w2, w3);
 	for (int i = 0; i < 3; ++i)
 	{
@@ -562,14 +562,14 @@ static SIMD_FORCE_INLINE bool continuousCollisionDetection(const btSoftBody::Fac
 	btScalar eps = SAFE_EPSILON;
 	int num_roots = 0;
 	btScalar roots[3];
-	if (std::abs(a3) < eps)
+    if (btFabs(a3) < eps)
 	{
 		// cubic term is zero
-		if (std::abs(a2) < eps)
+        if (btFabs(a2) < eps)
 		{
-			if (std::abs(a1) < eps)
+            if (btFabs(a1) < eps)
 			{
-				if (std::abs(a0) < eps)
+                if (btFabs(a0) < eps)
 				{
 					num_roots = 2;
 					roots[0] = 0;
@@ -606,7 +606,7 @@ static SIMD_FORCE_INLINE bool continuousCollisionDetection(const btSoftBody::Fac
 	}
 	for (int r = 0; r < num_roots; ++r)
 	{
-		double root = roots[r];
+        btScalar root = roots[r];
 		if (root <= 0)
 			continue;
 		if (root > dt + SIMD_EPSILON)

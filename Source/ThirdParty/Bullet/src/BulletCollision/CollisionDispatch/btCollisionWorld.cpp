@@ -174,7 +174,12 @@ void btCollisionWorld::updateSingleAabb(btCollisionObject* colObj)
 	btBroadphaseInterface* bp = (btBroadphaseInterface*)m_broadphasePairCache;
 
 	//moving objects should be moderately sized, probably something wrong if not
-	if (colObj->isStaticObject() || ((maxAabb - minAabb).length2() < btScalar(1e12)))
+    float l2 = (float)(maxAabb - minAabb).length2();
+    float mx = (float)btScalar(1e12);
+    bool cmp = ((maxAabb - minAabb).length2() < btScalar(1e12));
+    bool fcmp = l2 < mx;
+
+    if (colObj->isStaticObject() || ((maxAabb - minAabb).length2() < btScalar(1e12)))
 	{
 		bp->setAabb(colObj->getBroadphaseHandle(), minAabb, maxAabb, m_dispatcher1);
 	}

@@ -180,7 +180,7 @@ btScalar btDeformableBodySolver::computeDescentStep(TVStack& ddv, const TVStack&
 		}
 		inner_product = -inner_product;
 	}
-	else if (std::abs(inner_product) < tol)
+    else if (btFabs(inner_product) < tol)
 	{
 		if (verbose)
 		{

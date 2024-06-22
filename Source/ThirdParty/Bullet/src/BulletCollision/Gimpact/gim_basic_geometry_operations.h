@@ -476,7 +476,7 @@ SIMD_FORCE_INLINE void SEGMENT_COLLISION(
 	VEC_DIFF(vPointB, vPointA, vB1);
 	_tp = VEC_DOT(vPointB, _BD);
 	_tp /= VEC_DOT(_BD, _BD);
-	_tp = GIM_CLAMP(_tp, 0.0f, 1.0f);
+    _tp = GIM_CLAMP(_tp, btScalar(0.0f), btScalar(1.0f));
 	VEC_SCALE(vPointB, _tp, _BD);
 	VEC_SUM(vPointB, vPointB, vB1);
 }

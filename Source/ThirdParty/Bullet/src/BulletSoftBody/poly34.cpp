@@ -96,8 +96,8 @@ int SolveP3(btScalar* x, btScalar a, btScalar b, btScalar c)
 	}
 	else
 	{
-		//A =-pow(fabs(r)+sqrt(r2-q3),1./3);
-		A = -root3(fabs(r) + sqrt(r2 - q3));
+        //A =-pow(btFabs(r)+sqrt(r2-q3),1./3);
+        A = -root3(btFabs(r) + sqrt(r2 - q3));
 		if (r < 0)
 			A = -A;
 		B = (A == 0 ? 0 : q / A);
@@ -106,7 +106,7 @@ int SolveP3(btScalar* x, btScalar a, btScalar b, btScalar c)
 		x[0] = (A + B) - a;
 		x[1] = -0.5 * (A + B) - a;
 		x[2] = 0.5 * sqrt(3.) * (A - B);
-		if (fabs(x[2]) < eps)
+        if (btFabs(x[2]) < eps)
 		{
 			x[2] = x[1];
 			return (2);
@@ -208,7 +208,7 @@ static void dblSort3(btScalar& a, btScalar& b, btScalar& c)  // make: a <= b <= 
 int SolveP4De(btScalar* x, btScalar b, btScalar c, btScalar d)  // solve equation x^4 + b*x^2 + c*x + d
 {
 	//if( c==0 ) return SolveP4Bi(x,b,d); // After that, c!=0
-	if (fabs(c) < 1e-14 * (fabs(b) + fabs(d)))
+    if (btFabs(c) < 1e-14 * (btFabs(b) + btFabs(d)))
 		return SolveP4Bi(x, b, d);  // After that, c!=0
 
 	int res3 = SolveP3(x, 2 * b, b * b - 4 * d, -c * c);  // solve resolvent
@@ -341,19 +341,19 @@ int SolveP4(btScalar* x, btScalar a, btScalar b, btScalar c, btScalar d)
 btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)  // return real root of x^5 + a*x^4 + b*x^3 + c*x^2 + d*x + e = 0
 {
 	int cnt;
-	if (fabs(e) < eps)
+    if (btFabs(e) < eps)
 		return 0;
 
-	btScalar brd = fabs(a);  // brd - border of real roots
-	if (fabs(b) > brd)
-		brd = fabs(b);
-	if (fabs(c) > brd)
-		brd = fabs(c);
-	if (fabs(d) > brd)
-		brd = fabs(d);
-	if (fabs(e) > brd)
-		brd = fabs(e);
-	brd++;  // brd - border of real roots
+    btScalar brd = btFabs(a);  // brd - border of real roots
+    if (btFabs(b) > brd)
+        brd = btFabs(b);
+    if (btFabs(c) > brd)
+        brd = btFabs(c);
+    if (btFabs(d) > brd)
+        brd = btFabs(d);
+    if (btFabs(e) > brd)
+        brd = btFabs(e);
+    brd+=1;  // brd - border of real roots
 
 	btScalar x0, f0;       // less than root
 	btScalar x1, f1;       // greater than root
@@ -377,9 +377,9 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)  
 		x2 = -0.01 * brd;
 	}  // negative root
 
-	if (fabs(f0) < eps)
+    if (btFabs(f0) < eps)
 		return x0;
-	if (fabs(f1) < eps)
+    if (btFabs(f1) < eps)
 		return x1;
 
 	// now x0<x1, f(x0)<0, f(x1)>0
@@ -389,7 +389,7 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)  
 		x2 = (x0 + x1) / 2;  // next point
 		//x2 = x0 - f0*(x1 - x0) / (f1 - f0);        // next point
 		f2 = F5(x2);  // f(x2)
-		if (fabs(f2) < eps)
+        if (btFabs(f2) < eps)
 			return x2;
 		if (f2 > 0)
 		{
@@ -414,7 +414,7 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)  
 		if (x2 <= x0 || x2 >= x1)
 			x2 = (x0 + x1) / 2;  // now  x0 < x2 < x1
 		f2 = F5(x2);             // f(x2)
-		if (fabs(f2) < eps)
+        if (btFabs(f2) < eps)
 			return x2;
 		if (f2 > 0)
 		{
@@ -427,14 +427,14 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)  
 			f0 = f2;
 		}
 		f2s = (((5 * x2 + 4 * a) * x2 + 3 * b) * x2 + 2 * c) * x2 + d;  // f'(x2)
-		if (fabs(f2s) < eps)
+        if (btFabs(f2s) < eps)
 		{
 			x2 = 1e99;
 			continue;
 		}
 		dx = f2 / f2s;
 		x2 -= dx;
-	} while (fabs(dx) > eps);
+    } while (btFabs(dx) > eps);
 	return x2;
 }  // SolveP5_1(btScalar a,btScalar b,btScalar c,btScalar d,btScalar e)    // return real root of x^5 + a*x^4 + b*x^3 + c*x^2 + d*x + e = 0
 //-----------------------------------------------------------------------------

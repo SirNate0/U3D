@@ -43,6 +43,19 @@ int gNumSplitImpulseRecoveries = 0;
 
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 
+static btScalar debuggable_return(btScalar in)
+{
+    volatile int x;
+    x = (int)in;
+    return in;
+}
+
+#define INVALID_CHECK_RETURN \
+    if (deltaImpulse == 0) \
+        return (0); \
+    else if (c.m_jacDiagABInv == 0) \
+        return debuggable_return(BT_LARGE_FLOAT); // NEL: Should maybe instead add a NaN value (sticky 0b1000000...0) to the fixed point type, and saturation to +/-numeric_limits::max()
+
 //#define VERBOSE_RESIDUAL_PRINTF 1
 ///This is the scalar reference implementation of solving a single constraint row, the innerloop of the Projected Gauss Seidel/Sequential Impulse constraint solver
 ///Below are optional SSE2 and SSE4/FMA3 versions. We assume most hardware has SSE2. For SSE4/FMA3 we perform a CPU feature check.
@@ -75,7 +88,8 @@ static btScalar gResolveSingleConstraintRowGeneric_scalar_reference(btSolverBody
 	bodyA.internalApplyImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
 	bodyB.internalApplyImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
 
-	return deltaImpulse * (1. / c.m_jacDiagABInv);
+    INVALID_CHECK_RETURN
+    return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
 static btScalar gResolveSingleConstraintRowLowerLimit_scalar_reference(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
@@ -99,7 +113,8 @@ static btScalar gResolveSingleConstraintRowLowerLimit_scalar_reference(btSolverB
 	bodyA.internalApplyImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
 	bodyB.internalApplyImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
 
-	return deltaImpulse * (1. / c.m_jacDiagABInv);
+    INVALID_CHECK_RETURN
+    return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
 #ifdef USE_SIMD
@@ -312,6 +327,7 @@ static btScalar gResolveSplitPenetrationImpulse_scalar_reference(
 		bodyA.internalApplyPushImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
 		bodyB.internalApplyPushImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
 	}
+    INVALID_CHECK_RETURN
 	return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
@@ -1762,12 +1778,12 @@ btScalar btSequentialImpulseConstraintSolver::solveGroupCacheFriendlyIterations(
 					m_analyticsData.m_islandId = bodies[0]->getCompanionId();
 				m_analyticsData.m_numBodies = numBodies;
 				m_analyticsData.m_numContactManifolds = numManifolds;
-				m_analyticsData.m_remainingLeastSquaresResidual = m_leastSquaresResidual;
+                m_analyticsData.m_remainingLeastSquaresResidual = (double)m_leastSquaresResidual;
 				break;
 			}
 		}
 	}
-	return 0.f;
+    return 0;
 }
 
 void btSequentialImpulseConstraintSolver::writeBackContacts(int iBegin, int iEnd, const btContactSolverInfo& infoGlobal)

@@ -197,7 +197,7 @@ btScalar btDeformableBackwardEulerObjective::computeNorm(const TVStack& residual
 	{
 		mag += residual[i].length2();
 	}
-	return std::sqrt(mag);
+    return btSqrt(mag);
 }
 
 btScalar btDeformableBackwardEulerObjective::totalEnergy(btScalar dt)

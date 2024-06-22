@@ -441,6 +441,7 @@ SIMD_FORCE_INLINE int btHingeConstraint::calculateSerializeBufferSize() const
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 SIMD_FORCE_INLINE const char* btHingeConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btHingeConstraintData* hingeData = (btHingeConstraintData*)dataBuffer;
 	btTypedConstraint::serialize(&hingeData->m_typeConstraintData, serializer);
 
@@ -474,6 +475,7 @@ SIMD_FORCE_INLINE const char* btHingeConstraint::serialize(void* dataBuffer, btS
 	hingeData->m_padding1[3] = 0;
 #endif
 
+#endif
 	return btHingeConstraintDataName;
 }
 

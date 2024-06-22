@@ -104,7 +104,7 @@ public:
 				scaled_force.safeNormalize();
 				scaled_force *= m_maxForce;
 			}
-			energy += 0.5 * scaled_force.dot(dir);
+            energy += double(0.5 * scaled_force.dot(dir));
 		}
 		return energy;
 	}
@@ -121,7 +121,7 @@ public:
 				btVector3 dir = (m_face.m_n[i]->m_x - m_mouse_pos).normalized();
 				scaled_force = m_dampingStiffness * v_diff.dot(dir) * dir;
 			}
-			energy -= scaled_force.dot(m_face.m_n[i]->m_v) / dt;
+            energy -= double(scaled_force.dot(m_face.m_n[i]->m_v) / dt);
 		}
 		return energy;
 	}

@@ -50,7 +50,7 @@ btScalar btDeformableMultiBodyConstraintSolver::solveDeformableGroupIterations(b
 					m_analyticsData.m_islandId = bodies[0]->getCompanionId();
 				m_analyticsData.m_numBodies = numBodies;
 				m_analyticsData.m_numContactManifolds = numManifolds;
-				m_analyticsData.m_remainingLeastSquaresResidual = m_leastSquaresResidual;
+                m_analyticsData.m_remainingLeastSquaresResidual = double(m_leastSquaresResidual);
 				break;
 			}
 		}

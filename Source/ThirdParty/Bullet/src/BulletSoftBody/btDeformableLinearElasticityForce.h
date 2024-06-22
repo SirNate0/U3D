@@ -165,7 +165,7 @@ public:
 			{
 				btSoftBody::Tetra& tetra = psb->m_tetras[j];
 				btSoftBody::TetraScratch& s = psb->m_tetraScratches[j];
-				energy += tetra.m_element_measure * elasticEnergyDensity(s);
+                energy += double(tetra.m_element_measure * elasticEnergyDensity(s));
 			}
 		}
 		return energy;
@@ -199,7 +199,7 @@ public:
 			for (int j = 0; j < psb->m_nodes.size(); ++j)
 			{
 				const btSoftBody::Node& node = psb->m_nodes[j];
-				energy -= dampingForce[node.index].dot(node.m_v) / dt;
+                energy -= double(dampingForce[node.index].dot(node.m_v) / dt);
 			}
 		}
 		return energy;
@@ -210,8 +210,8 @@ public:
 		double density = 0;
 		btMatrix3x3 epsilon = (s.m_F + s.m_F.transpose()) * 0.5 - btMatrix3x3::getIdentity();
 		btScalar trace = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
-		density += m_mu * (epsilon[0].length2() + epsilon[1].length2() + epsilon[2].length2());
-		density += m_lambda * trace * trace * 0.5;
+        density += double(m_mu * (epsilon[0].length2() + epsilon[1].length2() + epsilon[2].length2()));
+        density += double(m_lambda * trace * trace * 0.5);
 		return density;
 	}
 

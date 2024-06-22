@@ -28,7 +28,7 @@ void btReducedVector::normalize()
         m_vecs.clear();
         return;
     }
-    *this /= std::sqrt(this->length2());
+    *this /= btSqrt(this->length2());
 }
 
 bool btReducedVector::testAdd() const

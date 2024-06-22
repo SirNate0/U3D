@@ -30,7 +30,8 @@ subject to the following restrictions:
 #define PLANEDIREPSILON 0.0000001f
 #define PARALELENORMALS 0.000001f
 
-#define BT_CLAMP(number, minval, maxval) (number < minval ? minval : (number > maxval ? maxval : number))
+//#define BT_CLAMP(number, minval, maxval) (number < minval ? minval : (number > maxval ? maxval : number))
+constexpr btScalar BT_CLAMP(btScalar number, btScalar minval, btScalar maxval) { return number < minval ? minval : (number > maxval ? maxval : number); }
 
 /// Calc a plane from a triangle edge an a normal. plane is a vec4f
 SIMD_FORCE_INLINE void bt_edge_plane(const btVector3 &e1, const btVector3 &e2, const btVector3 &normal, btVector4 &plane)

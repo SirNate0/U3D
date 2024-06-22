@@ -4308,6 +4308,7 @@ int btSoftBody::calculateSerializeBufferSize() const
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 const char* btSoftBody::serialize(void* dataBuffer, class btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btSoftBodyData* sbd = (btSoftBodyData*)dataBuffer;
 
 	btCollisionObject::serialize(&sbd->m_collisionObjectData, serializer);
@@ -4682,7 +4683,7 @@ const char* btSoftBody::serialize(void* dataBuffer, class btSerializer* serializ
 		}
 		serializer->finalizeChunk(chunk, "btSoftBodyJointData", BT_ARRAY_CODE, (void*)&m_joints[0]);
 	}
-
+#endif
 	return btSoftBodyDataName;
 }
 

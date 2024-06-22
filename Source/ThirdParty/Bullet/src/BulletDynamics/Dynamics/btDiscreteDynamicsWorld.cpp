@@ -1413,6 +1413,7 @@ void btDiscreteDynamicsWorld::serializeRigidBodies(btSerializer* serializer)
 
 void btDiscreteDynamicsWorld::serializeDynamicsWorldInfo(btSerializer* serializer)
 {
+#ifndef BT_USE_FIXED_PRECISION
 #ifdef BT_USE_DOUBLE_PRECISION
 	int len = sizeof(btDynamicsWorldDoubleData);
 	btChunk* chunk = serializer->allocate(len, 1);
@@ -1460,6 +1461,7 @@ void btDiscreteDynamicsWorld::serializeDynamicsWorldInfo(btSerializer* serialize
 	const char* structType = "btDynamicsWorldFloatData";
 #endif  //BT_USE_DOUBLE_PRECISION
 	serializer->finalizeChunk(chunk, structType, BT_DYNAMICSWORLD_CODE, worldInfo);
+#endif
 }
 
 void btDiscreteDynamicsWorld::serialize(btSerializer* serializer)

@@ -245,53 +245,53 @@ btMiniSDF::shape_function_(btVector3 const& xi, btShapeGradients* gradient) cons
 	btScalar _1mz2 = 1.0 - z2;
 
 	// Corner nodes.
-	btScalar fac = 1.0 / 64.0 * (9.0 * (x2 + y2 + z2) - 19.0);
-	res[0] = fac * _1mxt1my * _1mz;
-	res[1] = fac * _1pxt1my * _1mz;
-	res[2] = fac * _1mxt1py * _1mz;
-	res[3] = fac * _1pxt1py * _1mz;
-	res[4] = fac * _1mxt1my * _1pz;
-	res[5] = fac * _1pxt1my * _1pz;
-	res[6] = fac * _1mxt1py * _1pz;
-	res[7] = fac * _1pxt1py * _1pz;
+    btScalar fac = 1.0 / 64.0 * (9.0 * (x2 + y2 + z2) - 19.0);
+    res[0] = double(fac * _1mxt1my * _1mz);
+    res[1] = double(fac * _1pxt1my * _1mz);
+    res[2] = double(fac * _1mxt1py * _1mz);
+    res[3] = double(fac * _1pxt1py * _1mz);
+    res[4] = double(fac * _1mxt1my * _1pz);
+    res[5] = double(fac * _1pxt1my * _1pz);
+    res[6] = double(fac * _1mxt1py * _1pz);
+    res[7] = double(fac * _1pxt1py * _1pz);
 
-	// Edge nodes.
+    // Edge nodes.
 
-	fac = 9.0 / 64.0 * _1mx2;
-	btScalar fact1m3x = fac * _1m3x;
-	btScalar fact1p3x = fac * _1p3x;
-	res[8] = fact1m3x * _1myt1mz;
-	res[9] = fact1p3x * _1myt1mz;
-	res[10] = fact1m3x * _1myt1pz;
-	res[11] = fact1p3x * _1myt1pz;
-	res[12] = fact1m3x * _1pyt1mz;
-	res[13] = fact1p3x * _1pyt1mz;
-	res[14] = fact1m3x * _1pyt1pz;
-	res[15] = fact1p3x * _1pyt1pz;
+    fac = 9.0 / 64.0 * _1mx2;
+    btScalar fact1m3x = fac * _1m3x;
+    btScalar fact1p3x = fac * _1p3x;
+    res[8] = double(fact1m3x * _1myt1mz);
+    res[9] = double(fact1p3x * _1myt1mz);
+    res[10] = double(fact1m3x * _1myt1pz);
+    res[11] = double(fact1p3x * _1myt1pz);
+    res[12] = double(fact1m3x * _1pyt1mz);
+    res[13] = double(fact1p3x * _1pyt1mz);
+    res[14] = double(fact1m3x * _1pyt1pz);
+    res[15] = double(fact1p3x * _1pyt1pz);
 
-	fac = 9.0 / 64.0 * _1my2;
-	btScalar fact1m3y = fac * _1m3y;
-	btScalar fact1p3y = fac * _1p3y;
-	res[16] = fact1m3y * _1mxt1mz;
-	res[17] = fact1p3y * _1mxt1mz;
-	res[18] = fact1m3y * _1pxt1mz;
-	res[19] = fact1p3y * _1pxt1mz;
-	res[20] = fact1m3y * _1mxt1pz;
-	res[21] = fact1p3y * _1mxt1pz;
-	res[22] = fact1m3y * _1pxt1pz;
-	res[23] = fact1p3y * _1pxt1pz;
+    fac = 9.0 / 64.0 * _1my2;
+    btScalar fact1m3y = fac * _1m3y;
+    btScalar fact1p3y = fac * _1p3y;
+    res[16] = double(fact1m3y * _1mxt1mz);
+    res[17] = double(fact1p3y * _1mxt1mz);
+    res[18] = double(fact1m3y * _1pxt1mz);
+    res[19] = double(fact1p3y * _1pxt1mz);
+    res[20] = double(fact1m3y * _1mxt1pz);
+    res[21] = double(fact1p3y * _1mxt1pz);
+    res[22] = double(fact1m3y * _1pxt1pz);
+    res[23] = double(fact1p3y * _1pxt1pz);
 
-	fac = 9.0 / 64.0 * _1mz2;
-	btScalar fact1m3z = fac * _1m3z;
-	btScalar fact1p3z = fac * _1p3z;
-	res[24] = fact1m3z * _1mxt1my;
-	res[25] = fact1p3z * _1mxt1my;
-	res[26] = fact1m3z * _1mxt1py;
-	res[27] = fact1p3z * _1mxt1py;
-	res[28] = fact1m3z * _1pxt1my;
-	res[29] = fact1p3z * _1pxt1my;
-	res[30] = fact1m3z * _1pxt1py;
-	res[31] = fact1p3z * _1pxt1py;
+    fac = 9.0 / 64.0 * _1mz2;
+    btScalar fact1m3z = fac * _1m3z;
+    btScalar fact1p3z = fac * _1p3z;
+    res[24] = double(fact1m3z * _1mxt1my);
+    res[25] = double(fact1p3z * _1mxt1my);
+    res[26] = double(fact1m3z * _1mxt1py);
+    res[27] = double(fact1p3z * _1mxt1py);
+    res[28] = double(fact1m3z * _1pxt1my);
+    res[29] = double(fact1p3z * _1pxt1my);
+    res[30] = double(fact1m3z * _1pxt1py);
+    res[31] = double(fact1p3z * _1pxt1py);
 
 	if (gradient)
 	{

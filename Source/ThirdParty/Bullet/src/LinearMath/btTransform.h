@@ -19,6 +19,8 @@ subject to the following restrictions:
 
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btTransformData btTransformDoubleData
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btTransformData btTransformFixedData
 #else
 #define btTransformData btTransformFloatData
 #endif
@@ -251,6 +253,13 @@ struct btTransformDoubleData
 {
 	btMatrix3x3DoubleData m_basis;
 	btVector3DoubleData m_origin;
+};
+
+
+struct btTransformFixedData
+{
+    btMatrix3x3FixedData m_basis;
+    btVector3FixedData m_origin;
 };
 
 SIMD_FORCE_INLINE void btTransform::serialize(btTransformData& dataOut) const

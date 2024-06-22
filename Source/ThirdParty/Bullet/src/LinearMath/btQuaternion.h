@@ -21,6 +21,9 @@ subject to the following restrictions:
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btQuaternionData btQuaternionDoubleData
 #define btQuaternionDataName "btQuaternionDoubleData"
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btQuaternionData btQuaternionFixedData
+#define btQuaternionDataName "btQuaternionFixedData"
 #else
 #define btQuaternionData btQuaternionFloatData
 #define btQuaternionDataName "btQuaternionFloatData"
@@ -971,6 +974,11 @@ struct btQuaternionFloatData
 struct btQuaternionDoubleData
 {
 	double m_floats[4];
+};
+
+struct btQuaternionFixedData
+{
+    fpm::fixed_16_16 m_floats[4];
 };
 
 SIMD_FORCE_INLINE void btQuaternion::serializeFloat(struct btQuaternionFloatData& dataOut) const

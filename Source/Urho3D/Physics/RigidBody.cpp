@@ -115,7 +115,7 @@ void RigidBody::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Angular Rest Threshold", GetAngularRestThreshold, SetAngularRestThreshold, float, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Collision Layer", int, collisionLayer_, MarkBodyDirty, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Collision Mask", int, collisionMask_, MarkBodyDirty, DEFAULT_COLLISION_MASK, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Contact Threshold", GetContactProcessingThreshold, SetContactProcessingThreshold, float, BT_LARGE_FLOAT,
+    URHO3D_ACCESSOR_ATTRIBUTE("Contact Threshold", GetContactProcessingThreshold, SetContactProcessingThreshold, float, float(BT_LARGE_FLOAT),
         AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("CCD Radius", GetCcdRadius, SetCcdRadius, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("CCD Motion Threshold", GetCcdMotionThreshold, SetCcdMotionThreshold, float, 0.0f, AM_DEFAULT);
@@ -632,12 +632,12 @@ Vector3 RigidBody::GetVelocityAtPoint(const Vector3& position) const
 
 float RigidBody::GetLinearRestThreshold() const
 {
-    return body_ ? body_->getLinearSleepingThreshold() : 0.0f;
+    return body_ ? (float)body_->getLinearSleepingThreshold() : 0.0f;
 }
 
 float RigidBody::GetLinearDamping() const
 {
-    return body_ ? body_->getLinearDamping() : 0.0f;
+    return body_ ? (float)body_->getLinearDamping() : 0.0f;
 }
 
 Vector3 RigidBody::GetAngularVelocity() const
@@ -652,17 +652,17 @@ Vector3 RigidBody::GetAngularFactor() const
 
 float RigidBody::GetAngularRestThreshold() const
 {
-    return body_ ? body_->getAngularSleepingThreshold() : 0.0f;
+    return body_ ? (float)body_->getAngularSleepingThreshold() : 0.0f;
 }
 
 float RigidBody::GetAngularDamping() const
 {
-    return body_ ? body_->getAngularDamping() : 0.0f;
+    return body_ ? (float)body_->getAngularDamping() : 0.0f;
 }
 
 float RigidBody::GetFriction() const
 {
-    return body_ ? body_->getFriction() : 0.0f;
+    return body_ ? (float)body_->getFriction() : 0.0f;
 }
 
 Vector3 RigidBody::GetAnisotropicFriction() const
@@ -672,27 +672,27 @@ Vector3 RigidBody::GetAnisotropicFriction() const
 
 float RigidBody::GetRollingFriction() const
 {
-    return body_ ? body_->getRollingFriction() : 0.0f;
+    return body_ ? (float)body_->getRollingFriction() : 0.0f;
 }
 
 float RigidBody::GetRestitution() const
 {
-    return body_ ? body_->getRestitution() : 0.0f;
+    return body_ ? (float)body_->getRestitution() : 0.0f;
 }
 
 float RigidBody::GetContactProcessingThreshold() const
 {
-    return body_ ? body_->getContactProcessingThreshold() : 0.0f;
+    return body_ ? (float)body_->getContactProcessingThreshold() : 0.0f;
 }
 
 float RigidBody::GetCcdRadius() const
 {
-    return body_ ? body_->getCcdSweptSphereRadius() : 0.0f;
+    return body_ ? (float)body_->getCcdSweptSphereRadius() : 0.0f;
 }
 
 float RigidBody::GetCcdMotionThreshold() const
 {
-    return body_ ? body_->getCcdMotionThreshold() : 0.0f;
+    return body_ ? (float)body_->getCcdMotionThreshold() : 0.0f;
 }
 
 bool RigidBody::IsActive() const
@@ -749,7 +749,7 @@ void RigidBody::UpdateMass()
     auto numShapes = (unsigned)compoundShape_->getNumChildShapes();
     if (numShapes)
     {
-        PODVector<float> masses(numShapes);
+        PODVector<btScalar> masses(numShapes);
         for (unsigned i = 0; i < numShapes; ++i)
         {
             // The actual mass does not matter, divide evenly between child shapes

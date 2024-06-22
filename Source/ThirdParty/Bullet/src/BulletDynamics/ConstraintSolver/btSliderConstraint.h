@@ -328,6 +328,7 @@ SIMD_FORCE_INLINE int btSliderConstraint::calculateSerializeBufferSize() const
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 SIMD_FORCE_INLINE const char* btSliderConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btSliderConstraintData2* sliderData = (btSliderConstraintData2*)dataBuffer;
 	btTypedConstraint::serialize(&sliderData->m_typeConstraintData, serializer);
 
@@ -342,7 +343,7 @@ SIMD_FORCE_INLINE const char* btSliderConstraint::serialize(void* dataBuffer, bt
 
 	sliderData->m_useLinearReferenceFrameA = m_useLinearReferenceFrameA;
 	sliderData->m_useOffsetForConstraintFrame = m_useOffsetForConstraintFrame;
-
+#endif
 	return btSliderConstraintDataName;
 }
 

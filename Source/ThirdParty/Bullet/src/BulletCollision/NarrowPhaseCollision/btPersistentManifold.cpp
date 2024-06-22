@@ -308,6 +308,7 @@ int btPersistentManifold::calculateSerializeBufferSize() const
 
 const char* btPersistentManifold::serialize(const class btPersistentManifold* manifold, void* dataBuffer, class btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btPersistentManifoldData* dataOut = (btPersistentManifoldData*)dataBuffer;
 	memset(dataOut, 0, sizeof(btPersistentManifoldData));
 
@@ -355,6 +356,10 @@ const char* btPersistentManifold::serialize(const class btPersistentManifold* ma
 		dataOut->m_pointCacheContactMotion2[i] = pt.m_contactMotion2;
 	}
 	return btPersistentManifoldDataName;
+#else
+    //TODO:
+    return btPersistentManifoldDataName;
+#endif
 }
 
 void btPersistentManifold::deSerialize(const struct btPersistentManifoldDoubleData* manifoldDataPtr)

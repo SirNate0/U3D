@@ -471,8 +471,8 @@ void btConvexConvexAlgorithm ::processCollision(const btCollisionObjectWrapper* 
 
 			///btBoxShape is an exception: its vertices are created WITH margin so don't subtract it
 
-			btScalar min0Margin = min0->getShapeType() == BOX_SHAPE_PROXYTYPE ? 0.f : min0->getMargin();
-			btScalar min1Margin = min1->getShapeType() == BOX_SHAPE_PROXYTYPE ? 0.f : min1->getMargin();
+            btScalar min0Margin = min0->getShapeType() == BOX_SHAPE_PROXYTYPE ? btScalar(0.f) : min0->getMargin();
+            btScalar min1Margin = min1->getShapeType() == BOX_SHAPE_PROXYTYPE ? btScalar(0.f) : min1->getMargin();
 
 			btWithoutMarginResult withoutMargin(resultOut, min0Margin, min1Margin);
 

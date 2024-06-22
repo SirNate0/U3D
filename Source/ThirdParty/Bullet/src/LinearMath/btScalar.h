@@ -26,6 +26,11 @@ subject to the following restrictions:
 #include <stdlib.h>  //size_t for MSVC 6.0
 #include <float.h>
 
+// #include "fixed.h"
+#include "fixed.hpp" // from fpm
+#include "fixedmath.hpp" // from fpm
+#define BT_USE_FIXED_PRECISION
+
 /* SVN $Revision$ on $Date$ from http://bullet.googlecode.com*/
 #define BT_BULLET_VERSION 305
 
@@ -232,7 +237,7 @@ inline int btIsDoublePrecision()
 			//	#if defined (__i386__) || defined (__x86_64__)
 
 			// Urho3D: allow to disable SSE/NEON and let Linux, MinGW, & Android platforms in besides Apple
-			#if (!defined (BT_USE_DOUBLE_PRECISION))
+            #if (!defined (BT_USE_DOUBLE_PRECISION) && !defined (BT_USE_FIXED_PRECISION))
 				#if defined(__SSE__)
 
 					#define BT_USE_SIMD_VECTOR3
@@ -330,6 +335,24 @@ inline int btIsDoublePrecision()
 	typedef double btScalar;
 	//this number could be bigger in double precision
 	#define BT_LARGE_FLOAT 1e30
+#elif defined(BT_USE_FIXED_PRECISION)
+    //typedef numeric::fixed<16,16> btScalar;
+    using btScalar = fpm::fixed_16_16;
+//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 13>;
+//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 10>; // runs, but has instability
+//    using btScalar=fpm::fixed<std::int64_t, __int128_t, 20>; // runs, instability gone, but not particularly fast (though it is a debug build)
+//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 13>; // Fails because of the box for floorNode->SetScale(Vector3(1000.0f, 1.0f, 1000.0f));
+                                                                 // But I removed that, chaning it to a scale of 100, and it works okay.
+                                                                 // Still a bit of popping, but not as much. I suspect it is my #define INVALID_CHECK_RETURN
+//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 14>; // Fails because of the box for floorNode->SetScale(Vector3(1000.0f, 1.0f, 1000.0f));
+
+    //keep BT_LARGE_FLOAT*BT_LARGE_FLOAT < FLT_MAX
+    //#define BT_LARGE_FLOAT numeric::fixed<16,16>(1<<14) // 16k
+//    #define BT_LARGE_FLOAT (fpm::fixed_16_16(1<<14))
+//    #define BT_LARGE_FLOAT btScalar::from_raw_value(1<<(btScalar::total_bits()-4))
+//    #define BT_LARGE_FLOAT (fpm::fixed_16_16(1<<10)) //(32-10)/2 - 1
+    // CAUSES Most Vexing Parse static constexpr btScalar BT_LARGE_FLOAT = 1<<(btScalar::integer_bits()/2-1);
+    #define BT_LARGE_FLOAT (btScalar(1<<(btScalar::integer_bits()/2-1)))
 #else
 	typedef float btScalar;
 	//keep BT_LARGE_FLOAT*BT_LARGE_FLOAT < FLT_MAX
@@ -485,6 +508,37 @@ inline int btIsDoublePrecision()
 	SIMD_FORCE_INLINE btScalar btLog(btScalar x) { return log(x); }
 	SIMD_FORCE_INLINE btScalar btPow(btScalar x, btScalar y) { return pow(x, y); }
 	SIMD_FORCE_INLINE btScalar btFmod(btScalar x, btScalar y) { return fmod(x, y); }
+    SIMD_FORCE_INLINE btScalar btFloor(btScalar x) { return floor(x); }
+
+#elif defined(BT_USE_FIXED_PRECISION)
+
+    SIMD_FORCE_INLINE btScalar btSqrt(btScalar x)
+    {
+        return fpm::sqrt(x);
+    }
+    SIMD_FORCE_INLINE btScalar btFabs(btScalar x) { return fpm::abs(x); }
+    SIMD_FORCE_INLINE btScalar btCos(btScalar x) { return fpm::cos(x); }
+    SIMD_FORCE_INLINE btScalar btSin(btScalar x) { return fpm::sin(x); }
+    SIMD_FORCE_INLINE btScalar btTan(btScalar x) { return fpm::tan(x); }
+    SIMD_FORCE_INLINE btScalar btAcos(btScalar x)
+    {
+        if (x < btScalar(-1)) x = btScalar(-1);
+        if (x > btScalar(1)) x = btScalar(1);
+        return fpm::acos(x);
+    }
+    SIMD_FORCE_INLINE btScalar btAsin(btScalar x)
+    {
+        if (x < btScalar(-1)) x = btScalar(-1);
+        if (x > btScalar(1)) x = btScalar(1);
+        return fpm::asin(x);
+    }
+    SIMD_FORCE_INLINE btScalar btAtan(btScalar x) { return fpm::atan(x); }
+    SIMD_FORCE_INLINE btScalar btAtan2(btScalar x, btScalar y) { return fpm::atan2(x, y); }
+    SIMD_FORCE_INLINE btScalar btExp(btScalar x) { return fpm::exp(x); }
+    SIMD_FORCE_INLINE btScalar btLog(btScalar x) { return fpm::log(x); }
+    SIMD_FORCE_INLINE btScalar btPow(btScalar x, btScalar y) { return fpm::pow(x, y); }
+    SIMD_FORCE_INLINE btScalar btFmod(btScalar x, btScalar y) { return fpm::fmod(x, y); }
+    SIMD_FORCE_INLINE btScalar btFloor(btScalar x) { return fpm::floor(x); }
 
 #else//BT_USE_DOUBLE_PRECISION
 
@@ -548,11 +602,20 @@ inline int btIsDoublePrecision()
 
 #endif//BT_USE_DOUBLE_PRECISION
 
+#ifndef BT_USE_FIXED_PRECISION
 #define SIMD_PI btScalar(3.1415926535897932384626433832795029)
 #define SIMD_2_PI (btScalar(2.0) * SIMD_PI)
 #define SIMD_HALF_PI (SIMD_PI * btScalar(0.5))
 #define SIMD_RADS_PER_DEG (SIMD_2_PI / btScalar(360.0))
 #define SIMD_DEGS_PER_RAD (btScalar(360.0) / SIMD_2_PI)
+#else
+#define SIMD_PI btScalar::pi()
+#define SIMD_2_PI btScalar::two_pi()
+#define SIMD_HALF_PI btScalar::half_pi()
+#define SIMD_RADS_PER_DEG (btScalar::two_pi() / btScalar(360.0))
+#define SIMD_DEGS_PER_RAD (btScalar(360.0) / btScalar::two_pi())
+#endif
+
 #define SIMDSQRT12 btScalar(0.7071067811865475244008443621048490)
 #define btRecipSqrt(x) ((btScalar)(btScalar(1.0) / btSqrt(btScalar(x)))) /* reciprocal square root */
 #define btRecip(x) (btScalar(1.0) / btScalar(x))
@@ -564,6 +627,13 @@ inline int btIsDoublePrecision()
 	#define BT_ZERO 0.0
 	#define BT_TWO 2.0
 	#define BT_HALF 0.5
+#elif defined(BT_USE_FIXED_PRECISION)
+    #define SIMD_EPSILON std::numeric_limits<btScalar>::epsilon()
+    #define SIMD_INFINITY std::numeric_limits<btScalar>::max()
+    #define BT_ONE btScalar(1)
+    #define BT_ZERO btScalar(0)
+    #define BT_TWO btScalar(2)
+    #define BT_HALF btScalar(0.5)
 #else
 	#define SIMD_EPSILON FLT_EPSILON
 	#define SIMD_INFINITY FLT_MAX

@@ -115,7 +115,7 @@ btScalar DistanceBetweenLines(const btVector3 &ustart, const btVector3 &udir, co
 
 	btScalar distu = -btDot(cp, ustart);
 	btScalar distv = -btDot(cp, vstart);
-	btScalar dist = (btScalar)fabs(distu - distv);
+    btScalar dist = btFabs(distu - distv);
 	if (upoint)
 	{
 		btPlane plane;

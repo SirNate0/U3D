@@ -37,6 +37,9 @@ typedef btAlignedObjectArray<class btCollisionObject*> btCollisionObjectArray;
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btCollisionObjectData btCollisionObjectDoubleData
 #define btCollisionObjectDataName "btCollisionObjectDoubleData"
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btCollisionObjectData btCollisionObjectFixedData
+#define btCollisionObjectDataName "btCollisionObjectFixedData"
 #else
 #define btCollisionObjectData btCollisionObjectFloatData
 #define btCollisionObjectDataName "btCollisionObjectFloatData"
@@ -656,17 +659,17 @@ struct	btCollisionObjectFloatData
 	btTransformFloatData	m_interpolationWorldTransform;
 	btVector3FloatData		m_interpolationLinearVelocity;
 	btVector3FloatData		m_interpolationAngularVelocity;
-	btVector3FloatData		m_anisotropicFriction;
-	float					m_contactProcessingThreshold;	
-	float					m_deactivationTime;
-	float					m_friction;
-	float					m_rollingFriction;
-	float                   m_contactDamping;
+    btVector3FloatData		m_anisotropicFriction;
+    float					m_contactProcessingThreshold;
+    float					m_deactivationTime;
+    float					m_friction;
+    float					m_rollingFriction;
+    float                   m_contactDamping;
     float                   m_contactStiffness;
-	float					m_restitution;
-	float					m_hitFraction; 
-	float					m_ccdSweptSphereRadius;
-	float					m_ccdMotionThreshold;
+    float					m_restitution;
+    float					m_hitFraction;
+    float					m_ccdSweptSphereRadius;
+    float					m_ccdMotionThreshold;
 	int						m_hasAnisotropicFriction;
 	int						m_collisionFlags;
 	int						m_islandTag1;
@@ -677,6 +680,41 @@ struct	btCollisionObjectFloatData
 	int						m_collisionFilterGroup;
 	int						m_collisionFilterMask;
 	int						m_uniqueId;
+};
+
+///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
+struct	btCollisionObjectFixedData
+{
+    void					*m_broadphaseHandle;
+    void					*m_collisionShape;
+    btCollisionShapeData	*m_rootCollisionShape;
+    char					*m_name;
+
+    btTransformFixedData	m_worldTransform;
+    btTransformFixedData	m_interpolationWorldTransform;
+    btVector3FixedData		m_interpolationLinearVelocity;
+    btVector3FixedData		m_interpolationAngularVelocity;
+    btVector3FixedData		m_anisotropicFriction;
+    btScalar					m_contactProcessingThreshold;
+    btScalar					m_deactivationTime;
+    btScalar					m_friction;
+    btScalar					m_rollingFriction;
+    btScalar                    m_contactDamping;
+    btScalar                    m_contactStiffness;
+    btScalar					m_restitution;
+    btScalar					m_hitFraction;
+    btScalar					m_ccdSweptSphereRadius;
+    btScalar					m_ccdMotionThreshold;
+    int						m_hasAnisotropicFriction;
+    int						m_collisionFlags;
+    int						m_islandTag1;
+    int						m_companionId;
+    int						m_activationState1;
+    int						m_internalType;
+    int						m_checkCollideWith;
+    int						m_collisionFilterGroup;
+    int						m_collisionFilterMask;
+    int						m_uniqueId;
 };
 // clang-format on
 

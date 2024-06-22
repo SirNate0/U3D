@@ -215,7 +215,7 @@ public:
 
 				// elastic force
 				btVector3 dir = (node2->m_q - node1->m_q);
-				energy += 0.5 * m_elasticStiffness * (dir.norm() - r) * (dir.norm() - r);
+                energy += 0.5 * double(m_elasticStiffness) * double(dir.norm() - r) * double(dir.norm() - r);
 			}
 		}
 		return energy;
@@ -248,7 +248,7 @@ public:
 			for (int j = 0; j < psb->m_nodes.size(); ++j)
 			{
 				const btSoftBody::Node& node = psb->m_nodes[j];
-				energy -= dampingForce[node.index].dot(node.m_v) / dt;
+                energy -= double(dampingForce[node.index].dot(node.m_v) / dt);
 			}
 		}
 		return energy;

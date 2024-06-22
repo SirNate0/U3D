@@ -587,6 +587,7 @@ SIMD_FORCE_INLINE int btGeneric6DofSpring2Constraint::calculateSerializeBufferSi
 
 SIMD_FORCE_INLINE const char* btGeneric6DofSpring2Constraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btGeneric6DofSpring2ConstraintData2* dof = (btGeneric6DofSpring2ConstraintData2*)dataBuffer;
 	btTypedConstraint::serialize(&dof->m_typeConstraintData, serializer);
 
@@ -660,6 +661,7 @@ SIMD_FORCE_INLINE const char* btGeneric6DofSpring2Constraint::serialize(void* da
 	dof->m_padding1[1] = 0;
 	dof->m_padding1[2] = 0;
 	dof->m_padding1[3] = 0;
+#endif
 
 	return btGeneric6DofSpring2ConstraintDataName;
 }

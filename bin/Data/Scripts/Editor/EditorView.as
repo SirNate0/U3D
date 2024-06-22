@@ -918,16 +918,24 @@ void SetViewportMode(uint mode = VIEWPORT_SINGLE)
         // Create viewport on center of window
         {
             uint viewport = 0;
-            ViewportContext@ vc = ViewportContext(
-                IntRect(
+            IntRect vr = IntRect(
                     (secondaryToolBar.width + hierarchyWindow.width) - 1,
                     toolBar.height + uiMenuBar.height,
-                    viewportArea.width-attributeInspectorWindow.width,
-                    viewportArea.height),
+                    viewportArea.width-attributeInspectorWindow.width - hierarchyWindow.width,
+                    viewportArea.height);
+            ViewportContext@ vc = ViewportContext(
+                vr,
                 viewports.length + 1,
                 viewportMode & (VIEWPORT_TOP|VIEWPORT_LEFT|VIEWPORT_TOP_LEFT)
             );
             viewports.Push(vc);
+            
+            if (editorUIElement != null)
+            {
+                editorUIElement.SetSize(viewportArea.width-attributeInspectorWindow.width, viewportArea.height);
+                
+                editorUIElement.SetPosition(vr.left,vr.top);
+            }
         }
         viewportMode = mode;
 

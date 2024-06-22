@@ -118,6 +118,7 @@ SIMD_FORCE_INLINE int btGeneric6DofSpringConstraint::calculateSerializeBufferSiz
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 SIMD_FORCE_INLINE const char* btGeneric6DofSpringConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btGeneric6DofSpringConstraintData2* dof = (btGeneric6DofSpringConstraintData2*)dataBuffer;
 	btGeneric6DofConstraint::serialize(&dof->m_6dofData, serializer);
 
@@ -129,7 +130,8 @@ SIMD_FORCE_INLINE const char* btGeneric6DofSpringConstraint::serialize(void* dat
 		dof->m_springEnabled[i] = m_springEnabled[i] ? 1 : 0;
 		dof->m_springStiffness[i] = m_springStiffness[i];
 	}
-	return btGeneric6DofSpringConstraintDataName;
+#endif
+    return btGeneric6DofSpringConstraintDataName;
 }
 
 #endif  // BT_GENERIC_6DOF_SPRING_CONSTRAINT_H

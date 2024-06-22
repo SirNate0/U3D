@@ -124,6 +124,7 @@ SIMD_FORCE_INLINE int btGearConstraint::calculateSerializeBufferSize() const
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 SIMD_FORCE_INLINE const char* btGearConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btGearConstraintData* gear = (btGearConstraintData*)dataBuffer;
 	btTypedConstraint::serialize(&gear->m_typeConstraintData, serializer);
 
@@ -138,6 +139,9 @@ SIMD_FORCE_INLINE const char* btGearConstraint::serialize(void* dataBuffer, btSe
 	gear->m_padding[1] = 0;
 	gear->m_padding[2] = 0;
 	gear->m_padding[3] = 0;
+#endif
+#else
+    //TODO
 #endif
 
 	return btGearConstraintDataName;

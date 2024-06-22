@@ -46,12 +46,12 @@ inline btQuaternion ToBtQuaternion(const Quaternion& quaternion)
 
 inline Vector3 ToVector3(const btVector3& vector)
 {
-    return Vector3(vector.x(), vector.y(), vector.z());
+    return Vector3(float(vector.x()), float(vector.y()), float(vector.z()));
 }
 
 inline Quaternion ToQuaternion(const btQuaternion& quaternion)
 {
-    return Quaternion(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z());
+    return Quaternion(float(quaternion.w()), float(quaternion.x()), float(quaternion.y()), float(quaternion.z()));
 }
 
 inline bool HasWorldScaleChanged(const Vector3& oldWorldScale, const Vector3& newWorldScale)

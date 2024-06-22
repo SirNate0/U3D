@@ -1,0 +1,2311 @@
+diff --git a/Source/Samples/11_Physics/Physics.cpp b/Source/Samples/11_Physics/Physics.cpp
+index b04328d88..ffa7965b0 100644
+--- a/Source/Samples/11_Physics/Physics.cpp
++++ b/Source/Samples/11_Physics/Physics.cpp
+@@ -74,7 +74,7 @@ void Physics::Start()
+     SubscribeToEvents();
+ 
+     // Set the mouse mode to use in the sample
+-    Sample::InitMouseMode(MM_RELATIVE);
++    Sample::InitMouseMode(MM_FREE);
+ }
+ 
+ void Physics::CreateScene()
+@@ -124,6 +124,7 @@ void Physics::CreateScene()
+         Node* floorNode = scene_->CreateChild("Floor");
+         floorNode->SetPosition(Vector3(0.0f, -0.5f, 0.0f));
+         floorNode->SetScale(Vector3(1000.0f, 1.0f, 1000.0f));
++//        floorNode->SetScale(Vector3(100.0f, 1.0f, 100.0f)); // NEW for Q16.16
+         auto* floorObject = floorNode->CreateComponent<StaticModel>();
+         floorObject->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+         floorObject->SetMaterial(cache->GetResource<Material>("Materials/StoneTiled.xml"));
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/BroadphaseCollision/btQuantizedBvh.h b/Source/ThirdParty/Bullet/src/BulletCollision/BroadphaseCollision/btQuantizedBvh.h
+index 1c47b9ccf..c3f811b9b 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/BroadphaseCollision/btQuantizedBvh.h
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/BroadphaseCollision/btQuantizedBvh.h
+@@ -35,6 +35,10 @@ class btSerializer;
+ #define btQuantizedBvhData btQuantizedBvhDoubleData
+ #define btOptimizedBvhNodeData btOptimizedBvhNodeDoubleData
+ #define btQuantizedBvhDataName "btQuantizedBvhDoubleData"
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btQuantizedBvhData btQuantizedBvhFixedData
++#define btOptimizedBvhNodeData btOptimizedBvhNodeFixedData
++#define btQuantizedBvhDataName "btQuantizedBvhFixedData"
+ #else
+ #define btQuantizedBvhData btQuantizedBvhFloatData
+ #define btOptimizedBvhNodeData btOptimizedBvhNodeFloatData
+@@ -492,6 +496,16 @@ struct btOptimizedBvhNodeDoubleData
+ 	char m_pad[4];
+ };
+ 
++struct btOptimizedBvhNodeFixedData
++{
++    btVector3FixedData m_aabbMinOrg;
++    btVector3FixedData m_aabbMaxOrg;
++    int m_escapeIndex;
++    int m_subPart;
++    int m_triangleIndex;
++    char m_pad[4];
++};
++
+ 
+ struct btQuantizedBvhNodeData
+ {
+@@ -533,6 +547,24 @@ struct	btQuantizedBvhDoubleData
+ 	int							m_numSubtreeHeaders;
+ 	btBvhSubtreeInfoData		*m_subTreeInfoPtr;
+ };
++
++
++struct	btQuantizedBvhFixedData
++{
++    btVector3FixedData			m_bvhAabbMin;
++    btVector3FixedData			m_bvhAabbMax;
++    btVector3FixedData			m_bvhQuantization;
++    int					m_curNodeIndex;
++    int					m_useQuantization;
++    int					m_numContiguousLeafNodes;
++    int					m_numQuantizedContiguousNodes;
++    btOptimizedBvhNodeFixedData	*m_contiguousNodesPtr;
++    btQuantizedBvhNodeData		*m_quantizedContiguousNodesPtr;
++    btBvhSubtreeInfoData	*m_subTreeInfoPtr;
++    int					m_traversalMode;
++    int					m_numSubtreeHeaders;
++
++};
+ // clang-format on
+ 
+ SIMD_FORCE_INLINE int btQuantizedBvh::calculateSerializeBufferSizeNew() const
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionObject.h b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionObject.h
+index 3a1c271af..b06d64581 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionObject.h
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionObject.h
+@@ -37,6 +37,9 @@ typedef btAlignedObjectArray<class btCollisionObject*> btCollisionObjectArray;
+ #ifdef BT_USE_DOUBLE_PRECISION
+ #define btCollisionObjectData btCollisionObjectDoubleData
+ #define btCollisionObjectDataName "btCollisionObjectDoubleData"
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btCollisionObjectData btCollisionObjectFixedData
++#define btCollisionObjectDataName "btCollisionObjectFixedData"
+ #else
+ #define btCollisionObjectData btCollisionObjectFloatData
+ #define btCollisionObjectDataName "btCollisionObjectFloatData"
+@@ -656,17 +659,17 @@ struct	btCollisionObjectFloatData
+ 	btTransformFloatData	m_interpolationWorldTransform;
+ 	btVector3FloatData		m_interpolationLinearVelocity;
+ 	btVector3FloatData		m_interpolationAngularVelocity;
+-	btVector3FloatData		m_anisotropicFriction;
+-	float					m_contactProcessingThreshold;	
+-	float					m_deactivationTime;
+-	float					m_friction;
+-	float					m_rollingFriction;
+-	float                   m_contactDamping;
++    btVector3FloatData		m_anisotropicFriction;
++    float					m_contactProcessingThreshold;
++    float					m_deactivationTime;
++    float					m_friction;
++    float					m_rollingFriction;
++    float                   m_contactDamping;
+     float                   m_contactStiffness;
+-	float					m_restitution;
+-	float					m_hitFraction; 
+-	float					m_ccdSweptSphereRadius;
+-	float					m_ccdMotionThreshold;
++    float					m_restitution;
++    float					m_hitFraction;
++    float					m_ccdSweptSphereRadius;
++    float					m_ccdMotionThreshold;
+ 	int						m_hasAnisotropicFriction;
+ 	int						m_collisionFlags;
+ 	int						m_islandTag1;
+@@ -678,6 +681,41 @@ struct	btCollisionObjectFloatData
+ 	int						m_collisionFilterMask;
+ 	int						m_uniqueId;
+ };
++
++///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
++struct	btCollisionObjectFixedData
++{
++    void					*m_broadphaseHandle;
++    void					*m_collisionShape;
++    btCollisionShapeData	*m_rootCollisionShape;
++    char					*m_name;
++
++    btTransformFixedData	m_worldTransform;
++    btTransformFixedData	m_interpolationWorldTransform;
++    btVector3FixedData		m_interpolationLinearVelocity;
++    btVector3FixedData		m_interpolationAngularVelocity;
++    btVector3FixedData		m_anisotropicFriction;
++    btScalar					m_contactProcessingThreshold;
++    btScalar					m_deactivationTime;
++    btScalar					m_friction;
++    btScalar					m_rollingFriction;
++    btScalar                    m_contactDamping;
++    btScalar                    m_contactStiffness;
++    btScalar					m_restitution;
++    btScalar					m_hitFraction;
++    btScalar					m_ccdSweptSphereRadius;
++    btScalar					m_ccdMotionThreshold;
++    int						m_hasAnisotropicFriction;
++    int						m_collisionFlags;
++    int						m_islandTag1;
++    int						m_companionId;
++    int						m_activationState1;
++    int						m_internalType;
++    int						m_checkCollideWith;
++    int						m_collisionFilterGroup;
++    int						m_collisionFilterMask;
++    int						m_uniqueId;
++};
+ // clang-format on
+ 
+ SIMD_FORCE_INLINE int btCollisionObject::calculateSerializeBufferSize() const
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp
+index 934b0bb17..79f785d8c 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp
+@@ -174,7 +174,12 @@ void btCollisionWorld::updateSingleAabb(btCollisionObject* colObj)
+ 	btBroadphaseInterface* bp = (btBroadphaseInterface*)m_broadphasePairCache;
+ 
+ 	//moving objects should be moderately sized, probably something wrong if not
+-	if (colObj->isStaticObject() || ((maxAabb - minAabb).length2() < btScalar(1e12)))
++    float l2 = (float)(maxAabb - minAabb).length2();
++    float mx = (float)btScalar(1e12);
++    bool cmp = ((maxAabb - minAabb).length2() < btScalar(1e12));
++    bool fcmp = l2 < mx;
++
++    if (colObj->isStaticObject() || ((maxAabb - minAabb).length2() < btScalar(1e12)))
+ 	{
+ 		bp->setAabb(colObj->getBroadphaseHandle(), minAabb, maxAabb, m_dispatcher1);
+ 	}
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp
+index e56e73dcf..65a792068 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp
+@@ -451,6 +451,8 @@ btCollisionShape* btCollisionWorldImporter::convertCollisionShape(btCollisionSha
+ 							tmpPoints[i].deSerialize(convexData->m_unscaledPointsDoublePtr[i]);
+ 						if (convexData->m_unscaledPointsFloatPtr)
+ 							tmpPoints[i].deSerializeFloat(convexData->m_unscaledPointsFloatPtr[i]);
++#elif defined(BT_USE_FIXED_PRECISION)
++                        //TODO
+ #else
+ 						if (convexData->m_unscaledPointsFloatPtr)
+ 							tmpPoints[i].deSerialize(convexData->m_unscaledPointsFloatPtr[i]);
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.cpp
+index b48d97f2b..75684f6f8 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.cpp
+@@ -471,8 +471,8 @@ void btConvexConvexAlgorithm ::processCollision(const btCollisionObjectWrapper*
+ 
+ 			///btBoxShape is an exception: its vertices are created WITH margin so don't subtract it
+ 
+-			btScalar min0Margin = min0->getShapeType() == BOX_SHAPE_PROXYTYPE ? 0.f : min0->getMargin();
+-			btScalar min1Margin = min1->getShapeType() == BOX_SHAPE_PROXYTYPE ? 0.f : min1->getMargin();
++            btScalar min0Margin = min0->getShapeType() == BOX_SHAPE_PROXYTYPE ? btScalar(0.f) : min0->getMargin();
++            btScalar min1Margin = min1->getShapeType() == BOX_SHAPE_PROXYTYPE ? btScalar(0.f) : min1->getMargin();
+ 
+ 			btWithoutMarginResult withoutMargin(resultOut, min0Margin, min1Margin);
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.cpp
+index c66ce58e3..f0f09d7e1 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.cpp
+@@ -385,6 +385,8 @@ const char* btBvhTriangleMeshShape::serialize(void* dataBuffer, btSerializer* se
+ #ifdef BT_USE_DOUBLE_PRECISION
+ 			trimeshData->m_quantizedDoubleBvh = (btQuantizedBvhData*)chunk;
+ 			trimeshData->m_quantizedFloatBvh = 0;
++#elif defined(BT_USE_FIXED_PRECISION)
++                        //TODO
+ #else
+ 			trimeshData->m_quantizedFloatBvh = (btQuantizedBvhData*)chunk;
+ 			trimeshData->m_quantizedDoubleBvh = 0;
+@@ -395,6 +397,8 @@ const char* btBvhTriangleMeshShape::serialize(void* dataBuffer, btSerializer* se
+ #ifdef BT_USE_DOUBLE_PRECISION
+ 			trimeshData->m_quantizedDoubleBvh = (btQuantizedBvhData*)serializer->getUniquePointer(m_bvh);
+ 			trimeshData->m_quantizedFloatBvh = 0;
++#elif defined(BT_USE_FIXED_PRECISION)
++                        //TODO
+ #else
+ 			trimeshData->m_quantizedFloatBvh = (btQuantizedBvhData*)serializer->getUniquePointer(m_bvh);
+ 			trimeshData->m_quantizedDoubleBvh = 0;
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btConvexHullShape.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btConvexHullShape.cpp
+index 703de4592..be67601ee 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btConvexHullShape.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btConvexHullShape.cpp
+@@ -179,6 +179,8 @@ const char* btConvexHullShape::serialize(void* dataBuffer, btSerializer* seriali
+ #ifdef BT_USE_DOUBLE_PRECISION
+ 	shapeData->m_unscaledPointsFloatPtr = 0;
+ 	shapeData->m_unscaledPointsDoublePtr = numElem ? (btVector3Data*)serializer->getUniquePointer((void*)&m_unscaledPoints[0]) : 0;
++#elif defined(BT_USE_FIXED_PRECISION)
++                        //TODO
+ #else
+ 	shapeData->m_unscaledPointsFloatPtr = numElem ? (btVector3Data*)serializer->getUniquePointer((void*)&m_unscaledPoints[0]) : 0;
+ 	shapeData->m_unscaledPointsDoublePtr = 0;
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp
+index cab6980b6..726443a75 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp
+@@ -443,9 +443,9 @@ void gridRaycast(Action_T& quadAction, const btVector3& beginPos, const btVector
+ 	const int xiStep = rayDirectionFlatX > 0 ? 1 : rayDirectionFlatX < 0 ? -1 : 0;
+ 	const int ziStep = rayDirectionFlatZ > 0 ? 1 : rayDirectionFlatZ < 0 ? -1 : 0;
+ 
+-	const float infinite = 9999999;
+-	const btScalar paramDeltaX = xiStep != 0 ? 1.f / btFabs(rayDirectionFlatX) : infinite;
+-	const btScalar paramDeltaZ = ziStep != 0 ? 1.f / btFabs(rayDirectionFlatZ) : infinite;
++    const btScalar infinite = 9999999;
++    const btScalar paramDeltaX = xiStep != 0 ? btRecip(btFabs(rayDirectionFlatX)) : infinite;
++    const btScalar paramDeltaZ = ziStep != 0 ? btRecip(btFabs(rayDirectionFlatZ)) : infinite;
+ 
+ 	// pos = param * dir
+ 	btScalar paramCrossX;  // At which value of `param` we will cross a x-axis lane?
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btMiniSDF.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btMiniSDF.cpp
+index 13c0a343f..83cc161ae 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btMiniSDF.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/CollisionShapes/btMiniSDF.cpp
+@@ -245,53 +245,53 @@ btMiniSDF::shape_function_(btVector3 const& xi, btShapeGradients* gradient) cons
+ 	btScalar _1mz2 = 1.0 - z2;
+ 
+ 	// Corner nodes.
+-	btScalar fac = 1.0 / 64.0 * (9.0 * (x2 + y2 + z2) - 19.0);
+-	res[0] = fac * _1mxt1my * _1mz;
+-	res[1] = fac * _1pxt1my * _1mz;
+-	res[2] = fac * _1mxt1py * _1mz;
+-	res[3] = fac * _1pxt1py * _1mz;
+-	res[4] = fac * _1mxt1my * _1pz;
+-	res[5] = fac * _1pxt1my * _1pz;
+-	res[6] = fac * _1mxt1py * _1pz;
+-	res[7] = fac * _1pxt1py * _1pz;
+-
+-	// Edge nodes.
+-
+-	fac = 9.0 / 64.0 * _1mx2;
+-	btScalar fact1m3x = fac * _1m3x;
+-	btScalar fact1p3x = fac * _1p3x;
+-	res[8] = fact1m3x * _1myt1mz;
+-	res[9] = fact1p3x * _1myt1mz;
+-	res[10] = fact1m3x * _1myt1pz;
+-	res[11] = fact1p3x * _1myt1pz;
+-	res[12] = fact1m3x * _1pyt1mz;
+-	res[13] = fact1p3x * _1pyt1mz;
+-	res[14] = fact1m3x * _1pyt1pz;
+-	res[15] = fact1p3x * _1pyt1pz;
+-
+-	fac = 9.0 / 64.0 * _1my2;
+-	btScalar fact1m3y = fac * _1m3y;
+-	btScalar fact1p3y = fac * _1p3y;
+-	res[16] = fact1m3y * _1mxt1mz;
+-	res[17] = fact1p3y * _1mxt1mz;
+-	res[18] = fact1m3y * _1pxt1mz;
+-	res[19] = fact1p3y * _1pxt1mz;
+-	res[20] = fact1m3y * _1mxt1pz;
+-	res[21] = fact1p3y * _1mxt1pz;
+-	res[22] = fact1m3y * _1pxt1pz;
+-	res[23] = fact1p3y * _1pxt1pz;
+-
+-	fac = 9.0 / 64.0 * _1mz2;
+-	btScalar fact1m3z = fac * _1m3z;
+-	btScalar fact1p3z = fac * _1p3z;
+-	res[24] = fact1m3z * _1mxt1my;
+-	res[25] = fact1p3z * _1mxt1my;
+-	res[26] = fact1m3z * _1mxt1py;
+-	res[27] = fact1p3z * _1mxt1py;
+-	res[28] = fact1m3z * _1pxt1my;
+-	res[29] = fact1p3z * _1pxt1my;
+-	res[30] = fact1m3z * _1pxt1py;
+-	res[31] = fact1p3z * _1pxt1py;
++    btScalar fac = 1.0 / 64.0 * (9.0 * (x2 + y2 + z2) - 19.0);
++    res[0] = double(fac * _1mxt1my * _1mz);
++    res[1] = double(fac * _1pxt1my * _1mz);
++    res[2] = double(fac * _1mxt1py * _1mz);
++    res[3] = double(fac * _1pxt1py * _1mz);
++    res[4] = double(fac * _1mxt1my * _1pz);
++    res[5] = double(fac * _1pxt1my * _1pz);
++    res[6] = double(fac * _1mxt1py * _1pz);
++    res[7] = double(fac * _1pxt1py * _1pz);
++
++    // Edge nodes.
++
++    fac = 9.0 / 64.0 * _1mx2;
++    btScalar fact1m3x = fac * _1m3x;
++    btScalar fact1p3x = fac * _1p3x;
++    res[8] = double(fact1m3x * _1myt1mz);
++    res[9] = double(fact1p3x * _1myt1mz);
++    res[10] = double(fact1m3x * _1myt1pz);
++    res[11] = double(fact1p3x * _1myt1pz);
++    res[12] = double(fact1m3x * _1pyt1mz);
++    res[13] = double(fact1p3x * _1pyt1mz);
++    res[14] = double(fact1m3x * _1pyt1pz);
++    res[15] = double(fact1p3x * _1pyt1pz);
++
++    fac = 9.0 / 64.0 * _1my2;
++    btScalar fact1m3y = fac * _1m3y;
++    btScalar fact1p3y = fac * _1p3y;
++    res[16] = double(fact1m3y * _1mxt1mz);
++    res[17] = double(fact1p3y * _1mxt1mz);
++    res[18] = double(fact1m3y * _1pxt1mz);
++    res[19] = double(fact1p3y * _1pxt1mz);
++    res[20] = double(fact1m3y * _1mxt1pz);
++    res[21] = double(fact1p3y * _1mxt1pz);
++    res[22] = double(fact1m3y * _1pxt1pz);
++    res[23] = double(fact1p3y * _1pxt1pz);
++
++    fac = 9.0 / 64.0 * _1mz2;
++    btScalar fact1m3z = fac * _1m3z;
++    btScalar fact1p3z = fac * _1p3z;
++    res[24] = double(fact1m3z * _1mxt1my);
++    res[25] = double(fact1p3z * _1mxt1my);
++    res[26] = double(fact1m3z * _1mxt1py);
++    res[27] = double(fact1p3z * _1mxt1py);
++    res[28] = double(fact1m3z * _1pxt1my);
++    res[29] = double(fact1p3z * _1pxt1my);
++    res[30] = double(fact1m3z * _1pxt1py);
++    res[31] = double(fact1p3z * _1pxt1py);
+ 
+ 	if (gradient)
+ 	{
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/btGeometryOperations.h b/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/btGeometryOperations.h
+index 6a1ee6dcf..f00788359 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/btGeometryOperations.h
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/btGeometryOperations.h
+@@ -30,7 +30,8 @@ subject to the following restrictions:
+ #define PLANEDIREPSILON 0.0000001f
+ #define PARALELENORMALS 0.000001f
+ 
+-#define BT_CLAMP(number, minval, maxval) (number < minval ? minval : (number > maxval ? maxval : number))
++//#define BT_CLAMP(number, minval, maxval) (number < minval ? minval : (number > maxval ? maxval : number))
++constexpr btScalar BT_CLAMP(btScalar number, btScalar minval, btScalar maxval) { return number < minval ? minval : (number > maxval ? maxval : number); }
+ 
+ /// Calc a plane from a triangle edge an a normal. plane is a vec4f
+ SIMD_FORCE_INLINE void bt_edge_plane(const btVector3 &e1, const btVector3 &e2, const btVector3 &normal, btVector4 &plane)
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/gim_basic_geometry_operations.h b/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/gim_basic_geometry_operations.h
+index 7ab783672..265e9253e 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/gim_basic_geometry_operations.h
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/Gimpact/gim_basic_geometry_operations.h
+@@ -476,7 +476,7 @@ SIMD_FORCE_INLINE void SEGMENT_COLLISION(
+ 	VEC_DIFF(vPointB, vPointA, vB1);
+ 	_tp = VEC_DOT(vPointB, _BD);
+ 	_tp /= VEC_DOT(_BD, _BD);
+-	_tp = GIM_CLAMP(_tp, 0.0f, 1.0f);
++    _tp = GIM_CLAMP(_tp, btScalar(0.0f), btScalar(1.0f));
+ 	VEC_SCALE(vPointB, _tp, _BD);
+ 	VEC_SUM(vPointB, vPointB, vB1);
+ }
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.cpp
+index 38df8d480..6b8d38eb1 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.cpp
+@@ -100,7 +100,7 @@ bool btContinuousConvexCollision::calcTimeOfImpact(
+ 	btTransformUtil::calculateVelocity(fromB, toB, btScalar(1.), linVelB, angVelB);
+ 
+ 	btScalar boundingRadiusA = m_convexA->getAngularMotionDisc();
+-	btScalar boundingRadiusB = m_convexB1 ? m_convexB1->getAngularMotionDisc() : 0.f;
++    btScalar boundingRadiusB = m_convexB1 ? m_convexB1->getAngularMotionDisc() : btScalar(0);
+ 
+ 	btScalar maxAngularProjectedVelocity = angVelA.length() * boundingRadiusA + angVelB.length() * boundingRadiusB;
+ 	btVector3 relLinVel = (linVelB - linVelA);
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btGjkPairDetector.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btGjkPairDetector.cpp
+index 5af93cb2f..1b093b671 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btGjkPairDetector.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btGjkPairDetector.cpp
+@@ -347,8 +347,8 @@ btScalar btVec3PointTriDist2(const btVector3 *P,
+ 	// computed.
+ 
+ 	btVector3 d1, d2, a;
+-	double u, v, w, p, q, r;
+-	double s, t, dist, dist2;
++    btScalar u, v, w, p, q, r;
++    btScalar s, t, dist, dist2;
+ 	btVector3 witness2;
+ 
+ 	btVec3Sub2(&d1, B, x0);
+diff --git a/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btPersistentManifold.cpp b/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btPersistentManifold.cpp
+index dca3e0926..ce56a7ec8 100644
+--- a/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btPersistentManifold.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletCollision/NarrowPhaseCollision/btPersistentManifold.cpp
+@@ -308,6 +308,7 @@ int btPersistentManifold::calculateSerializeBufferSize() const
+ 
+ const char* btPersistentManifold::serialize(const class btPersistentManifold* manifold, void* dataBuffer, class btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btPersistentManifoldData* dataOut = (btPersistentManifoldData*)dataBuffer;
+ 	memset(dataOut, 0, sizeof(btPersistentManifoldData));
+ 
+@@ -355,6 +356,10 @@ const char* btPersistentManifold::serialize(const class btPersistentManifold* ma
+ 		dataOut->m_pointCacheContactMotion2[i] = pt.m_contactMotion2;
+ 	}
+ 	return btPersistentManifoldDataName;
++#else
++    //TODO:
++    return btPersistentManifoldDataName;
++#endif
+ }
+ 
+ void btPersistentManifold::deSerialize(const struct btPersistentManifoldDoubleData* manifoldDataPtr)
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/Character/btKinematicCharacterController.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/Character/btKinematicCharacterController.cpp
+index 2bbccb291..8e095106b 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/Character/btKinematicCharacterController.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/Character/btKinematicCharacterController.cpp
+@@ -926,7 +926,7 @@ btScalar btKinematicCharacterController::getMaxPenetrationDepth() const
+ 
+ bool btKinematicCharacterController::onGround() const
+ {
+-	return (fabs(m_verticalVelocity) < SIMD_EPSILON) && (fabs(m_verticalOffset) < SIMD_EPSILON);
++    return (btFabs(m_verticalVelocity) < SIMD_EPSILON) && (btFabs(m_verticalOffset) < SIMD_EPSILON);
+ }
+ 
+ void btKinematicCharacterController::setStepHeight(btScalar h)
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.cpp
+index ac046aa6e..ee2d28bf4 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.cpp
+@@ -816,7 +816,7 @@ void btConeTwistConstraint::computeConeLimitInfo(const btQuaternion& qCone,
+ 		vSwingAxis.normalize();
+ #if 0
+         // non-zero twist?! this should never happen.
+-       btAssert(fabs(vSwingAxis.x()) <= SIMD_EPSILON));
++       btAssert(btFabs(vSwingAxis.x()) <= SIMD_EPSILON));
+ #endif
+ 
+ 		// Compute limit for given swing. tricky:
+@@ -837,23 +837,23 @@ void btConeTwistConstraint::computeConeLimitInfo(const btQuaternion& qCone,
+ 		// Do the math and it should be clear.
+ 
+ 		swingLimit = m_swingSpan1;  // if xEllipse == 0, we have a pure vSwingAxis.z rotation: just use swingspan1
+-		if (fabs(xEllipse) > SIMD_EPSILON)
++        if (btFabs(xEllipse) > SIMD_EPSILON)
+ 		{
+ 			btScalar surfaceSlope2 = (yEllipse * yEllipse) / (xEllipse * xEllipse);
+ 			btScalar norm = 1 / (m_swingSpan2 * m_swingSpan2);
+ 			norm += surfaceSlope2 / (m_swingSpan1 * m_swingSpan1);
+ 			btScalar swingLimit2 = (1 + surfaceSlope2) / norm;
+-			swingLimit = std::sqrt(swingLimit2);
++            swingLimit = btSqrt(swingLimit2);
+ 		}
+ 
+ 		// test!
+ 		/*swingLimit = m_swingSpan2;
+-		if (fabs(vSwingAxis.z()) > SIMD_EPSILON)
++        if (btFabs(vSwingAxis.z()) > SIMD_EPSILON)
+ 		{
+ 		btScalar mag_2 = m_swingSpan1*m_swingSpan1 + m_swingSpan2*m_swingSpan2;
+ 		btScalar sinphi = m_swingSpan2 / sqrt(mag_2);
+ 		btScalar phi = asin(sinphi);
+-		btScalar theta = atan2(fabs(vSwingAxis.y()),fabs(vSwingAxis.z()));
++        btScalar theta = atan2(btFabs(vSwingAxis.y()),fabs(vSwingAxis.z()));
+ 		btScalar alpha = 3.14159f - theta - phi;
+ 		btScalar sinalpha = sin(alpha);
+ 		swingLimit = m_swingSpan1 * sinphi/sinalpha;
+@@ -882,13 +882,13 @@ btVector3 btConeTwistConstraint::GetPointForAngle(btScalar fAngleInRadians, btSc
+ 	// Do the math and it should be clear.
+ 
+ 	btScalar swingLimit = m_swingSpan1;  // if xEllipse == 0, just use axis b (1)
+-	if (fabs(xEllipse) > SIMD_EPSILON)
++    if (btFabs(xEllipse) > SIMD_EPSILON)
+ 	{
+ 		btScalar surfaceSlope2 = (yEllipse * yEllipse) / (xEllipse * xEllipse);
+ 		btScalar norm = 1 / (m_swingSpan2 * m_swingSpan2);
+ 		norm += surfaceSlope2 / (m_swingSpan1 * m_swingSpan1);
+ 		btScalar swingLimit2 = (1 + surfaceSlope2) / norm;
+-		swingLimit = std::sqrt(swingLimit2);
++        swingLimit = btSqrt(swingLimit2);
+ 	}
+ 
+ 	// convert into point in constraint space:
+@@ -939,7 +939,7 @@ void btConeTwistConstraint::adjustSwingAxisToUseEllipseNormal(btVector3& vSwingA
+ 	btScalar z = vSwingAxis.y();
+ 
+ 	// do the math...
+-	if (fabs(z) > SIMD_EPSILON)  // avoid division by 0. and we don't need an update if z == 0.
++    if (btFabs(z) > SIMD_EPSILON)  // avoid division by 0. and we don't need an update if z == 0.
+ 	{
+ 		// compute gradient/normal of ellipse surface at current "point"
+ 		btScalar grad = y / z;
+@@ -947,9 +947,9 @@ void btConeTwistConstraint::adjustSwingAxisToUseEllipseNormal(btVector3& vSwingA
+ 
+ 		// adjust y/z to represent normal at point (instead of vector to point)
+ 		if (y > 0)
+-			y = fabs(grad * z);
++            y = btFabs(grad * z);
+ 		else
+-			y = -fabs(grad * z);
++            y = -btFabs(grad * z);
+ 
+ 		// convert ellipse direction back to swing axis
+ 		vSwingAxis.setZ(-y);
+@@ -993,7 +993,7 @@ void btConeTwistConstraint::setMotorTargetInConstraintSpace(const btQuaternion&
+ 			btVector3 swingAxis;
+ 			computeConeLimitInfo(qTargetCone, swingAngle, swingAxis, swingLimit);
+ 
+-			if (fabs(swingAngle) > SIMD_EPSILON)
++            if (btFabs(swingAngle) > SIMD_EPSILON)
+ 			{
+ 				if (swingAngle > swingLimit * softness)
+ 					swingAngle = swingLimit * softness;
+@@ -1010,7 +1010,7 @@ void btConeTwistConstraint::setMotorTargetInConstraintSpace(const btQuaternion&
+ 			btVector3 twistAxis;
+ 			computeTwistLimitInfo(qTargetTwist, twistAngle, twistAxis);
+ 
+-			if (fabs(twistAngle) > SIMD_EPSILON)
++            if (btFabs(twistAngle) > SIMD_EPSILON)
+ 			{
+ 				// eddy todo: limitSoftness used here???
+ 				if (twistAngle > m_twistSpan * softness)
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h
+index 64f44df1c..300c4e70d 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h
+@@ -403,6 +403,7 @@ SIMD_FORCE_INLINE int btConeTwistConstraint::calculateSerializeBufferSize() cons
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btConeTwistConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btConeTwistConstraintData2* cone = (btConeTwistConstraintData2*)dataBuffer;
+ 	btTypedConstraint::serialize(&cone->m_typeConstraintData, serializer);
+ 
+@@ -416,7 +417,9 @@ SIMD_FORCE_INLINE const char* btConeTwistConstraint::serialize(void* dataBuffer,
+ 	cone->m_biasFactor = m_biasFactor;
+ 	cone->m_relaxationFactor = m_relaxationFactor;
+ 	cone->m_damping = m_damping;
+-
++#else
++    //TODO
++#endif
+ 	return btConeTwistConstraintDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGearConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGearConstraint.h
+index 64b15dfbc..77420e1d0 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGearConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGearConstraint.h
+@@ -124,6 +124,7 @@ SIMD_FORCE_INLINE int btGearConstraint::calculateSerializeBufferSize() const
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btGearConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btGearConstraintData* gear = (btGearConstraintData*)dataBuffer;
+ 	btTypedConstraint::serialize(&gear->m_typeConstraintData, serializer);
+ 
+@@ -139,6 +140,9 @@ SIMD_FORCE_INLINE const char* btGearConstraint::serialize(void* dataBuffer, btSe
+ 	gear->m_padding[2] = 0;
+ 	gear->m_padding[3] = 0;
+ #endif
++#else
++    //TODO
++#endif
+ 
+ 	return btGearConstraintDataName;
+ }
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h
+index b9e762e17..726264e5f 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h
+@@ -591,6 +591,7 @@ SIMD_FORCE_INLINE int btGeneric6DofConstraint::calculateSerializeBufferSize() co
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btGeneric6DofConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btGeneric6DofConstraintData2* dof = (btGeneric6DofConstraintData2*)dataBuffer;
+ 	btTypedConstraint::serialize(&dof->m_typeConstraintData, serializer);
+ 
+@@ -608,7 +609,7 @@ SIMD_FORCE_INLINE const char* btGeneric6DofConstraint::serialize(void* dataBuffe
+ 
+ 	dof->m_useLinearReferenceFrameA = m_useLinearReferenceFrameA ? 1 : 0;
+ 	dof->m_useOffsetForConstraintFrame = m_useOffsetForConstraintFrame ? 1 : 0;
+-
++#endif
+ 	return btGeneric6DofConstraintDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.cpp
+index 74a13c624..c4055188c 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.cpp
+@@ -1089,7 +1089,7 @@ void btGeneric6DofSpring2Constraint::setServoTarget(int index, btScalar targetOr
+ 		btScalar target = targetOrg + SIMD_PI;
+ 		if (1)
+ 		{
+-			btScalar m = target - SIMD_2_PI * std::floor(target / SIMD_2_PI);
++            btScalar m = target - SIMD_2_PI * btFloor(target / SIMD_2_PI);
+ 			// handle boundary cases resulted from floating-point cut off:
+ 			{
+ 				if (m >= SIMD_2_PI)
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h
+index c86dc373d..2d446c7ed 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h
+@@ -587,6 +587,7 @@ SIMD_FORCE_INLINE int btGeneric6DofSpring2Constraint::calculateSerializeBufferSi
+ 
+ SIMD_FORCE_INLINE const char* btGeneric6DofSpring2Constraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btGeneric6DofSpring2ConstraintData2* dof = (btGeneric6DofSpring2ConstraintData2*)dataBuffer;
+ 	btTypedConstraint::serialize(&dof->m_typeConstraintData, serializer);
+ 
+@@ -660,6 +661,7 @@ SIMD_FORCE_INLINE const char* btGeneric6DofSpring2Constraint::serialize(void* da
+ 	dof->m_padding1[1] = 0;
+ 	dof->m_padding1[2] = 0;
+ 	dof->m_padding1[3] = 0;
++#endif
+ 
+ 	return btGeneric6DofSpring2ConstraintDataName;
+ }
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h
+index 02b9d4d05..bc0c1bdc7 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.h
+@@ -118,6 +118,7 @@ SIMD_FORCE_INLINE int btGeneric6DofSpringConstraint::calculateSerializeBufferSiz
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btGeneric6DofSpringConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btGeneric6DofSpringConstraintData2* dof = (btGeneric6DofSpringConstraintData2*)dataBuffer;
+ 	btGeneric6DofConstraint::serialize(&dof->m_6dofData, serializer);
+ 
+@@ -129,7 +130,8 @@ SIMD_FORCE_INLINE const char* btGeneric6DofSpringConstraint::serialize(void* dat
+ 		dof->m_springEnabled[i] = m_springEnabled[i] ? 1 : 0;
+ 		dof->m_springStiffness[i] = m_springStiffness[i];
+ 	}
+-	return btGeneric6DofSpringConstraintDataName;
++#endif
++    return btGeneric6DofSpringConstraintDataName;
+ }
+ 
+ #endif  // BT_GENERIC_6DOF_SPRING_CONSTRAINT_H
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btHingeConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btHingeConstraint.h
+index c7509e30a..e8aa8139a 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btHingeConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btHingeConstraint.h
+@@ -441,6 +441,7 @@ SIMD_FORCE_INLINE int btHingeConstraint::calculateSerializeBufferSize() const
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btHingeConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btHingeConstraintData* hingeData = (btHingeConstraintData*)dataBuffer;
+ 	btTypedConstraint::serialize(&hingeData->m_typeConstraintData, serializer);
+ 
+@@ -474,6 +475,7 @@ SIMD_FORCE_INLINE const char* btHingeConstraint::serialize(void* dataBuffer, btS
+ 	hingeData->m_padding1[3] = 0;
+ #endif
+ 
++#endif
+ 	return btHingeConstraintDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h
+index 4717e1980..eaabb7b95 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h
+@@ -161,12 +161,13 @@ SIMD_FORCE_INLINE int btPoint2PointConstraint::calculateSerializeBufferSize() co
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btPoint2PointConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btPoint2PointConstraintData2* p2pData = (btPoint2PointConstraintData2*)dataBuffer;
+ 
+ 	btTypedConstraint::serialize(&p2pData->m_typeConstraintData, serializer);
+ 	m_pivotInA.serialize(p2pData->m_pivotInA);
+ 	m_pivotInB.serialize(p2pData->m_pivotInB);
+-
++#endif
+ 	return btPoint2PointConstraintDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp
+index 6c9580f4d..1d3384bed 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.cpp
+@@ -43,6 +43,19 @@ int gNumSplitImpulseRecoveries = 0;
+ 
+ #include "BulletDynamics/Dynamics/btRigidBody.h"
+ 
++static btScalar debuggable_return(btScalar in)
++{
++    volatile int x;
++    x = (int)in;
++    return in;
++}
++
++#define INVALID_CHECK_RETURN \
++    if (deltaImpulse == 0) \
++        return (0); \
++    else if (c.m_jacDiagABInv == 0) \
++        return debuggable_return(BT_LARGE_FLOAT); // NEL: Should maybe instead add a NaN value (sticky 0b1000000...0) to the fixed point type, and saturation to +/-numeric_limits::max()
++
+ //#define VERBOSE_RESIDUAL_PRINTF 1
+ ///This is the scalar reference implementation of solving a single constraint row, the innerloop of the Projected Gauss Seidel/Sequential Impulse constraint solver
+ ///Below are optional SSE2 and SSE4/FMA3 versions. We assume most hardware has SSE2. For SSE4/FMA3 we perform a CPU feature check.
+@@ -75,7 +88,8 @@ static btScalar gResolveSingleConstraintRowGeneric_scalar_reference(btSolverBody
+ 	bodyA.internalApplyImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
+ 	bodyB.internalApplyImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
+ 
+-	return deltaImpulse * (1. / c.m_jacDiagABInv);
++    INVALID_CHECK_RETURN
++    return deltaImpulse * (1. / c.m_jacDiagABInv);
+ }
+ 
+ static btScalar gResolveSingleConstraintRowLowerLimit_scalar_reference(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
+@@ -99,7 +113,8 @@ static btScalar gResolveSingleConstraintRowLowerLimit_scalar_reference(btSolverB
+ 	bodyA.internalApplyImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
+ 	bodyB.internalApplyImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
+ 
+-	return deltaImpulse * (1. / c.m_jacDiagABInv);
++    INVALID_CHECK_RETURN
++    return deltaImpulse * (1. / c.m_jacDiagABInv);
+ }
+ 
+ #ifdef USE_SIMD
+@@ -312,6 +327,7 @@ static btScalar gResolveSplitPenetrationImpulse_scalar_reference(
+ 		bodyA.internalApplyPushImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
+ 		bodyB.internalApplyPushImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
+ 	}
++    INVALID_CHECK_RETURN
+ 	return deltaImpulse * (1. / c.m_jacDiagABInv);
+ }
+ 
+@@ -1762,12 +1778,12 @@ btScalar btSequentialImpulseConstraintSolver::solveGroupCacheFriendlyIterations(
+ 					m_analyticsData.m_islandId = bodies[0]->getCompanionId();
+ 				m_analyticsData.m_numBodies = numBodies;
+ 				m_analyticsData.m_numContactManifolds = numManifolds;
+-				m_analyticsData.m_remainingLeastSquaresResidual = m_leastSquaresResidual;
++                m_analyticsData.m_remainingLeastSquaresResidual = (double)m_leastSquaresResidual;
+ 				break;
+ 			}
+ 		}
+ 	}
+-	return 0.f;
++    return 0;
+ }
+ 
+ void btSequentialImpulseConstraintSolver::writeBackContacts(int iBegin, int iEnd, const btContactSolverInfo& infoGlobal)
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSliderConstraint.h b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSliderConstraint.h
+index 75ca34e97..7f6d53bd4 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSliderConstraint.h
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btSliderConstraint.h
+@@ -328,6 +328,7 @@ SIMD_FORCE_INLINE int btSliderConstraint::calculateSerializeBufferSize() const
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ SIMD_FORCE_INLINE const char* btSliderConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btSliderConstraintData2* sliderData = (btSliderConstraintData2*)dataBuffer;
+ 	btTypedConstraint::serialize(&sliderData->m_typeConstraintData, serializer);
+ 
+@@ -342,7 +343,7 @@ SIMD_FORCE_INLINE const char* btSliderConstraint::serialize(void* dataBuffer, bt
+ 
+ 	sliderData->m_useLinearReferenceFrameA = m_useLinearReferenceFrameA;
+ 	sliderData->m_useOffsetForConstraintFrame = m_useOffsetForConstraintFrame;
+-
++#endif
+ 	return btSliderConstraintDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btTypedConstraint.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btTypedConstraint.cpp
+index ebe679c44..fc848350a 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btTypedConstraint.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/ConstraintSolver/btTypedConstraint.cpp
+@@ -103,6 +103,7 @@ btScalar btTypedConstraint::getMotorFactor(btScalar pos, btScalar lowLim, btScal
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ const char* btTypedConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btTypedConstraintData2* tcd = (btTypedConstraintData2*)dataBuffer;
+ 
+ 	tcd->m_rbA = (btRigidBodyData*)serializer->getUniquePointer(&m_rbA);
+@@ -135,7 +136,7 @@ const char* btTypedConstraint::serialize(void* dataBuffer, btSerializer* seriali
+ 	for (i = 0; i < m_rbB.getNumConstraintRefs(); i++)
+ 		if (m_rbB.getConstraintRef(i) == this)
+ 			tcd->m_disableCollisionsBetweenLinkedBodies = true;
+-
++#endif
+ 	return btTypedConstraintDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp
+index 26d128093..1a6635985 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp
+@@ -1413,6 +1413,7 @@ void btDiscreteDynamicsWorld::serializeRigidBodies(btSerializer* serializer)
+ 
+ void btDiscreteDynamicsWorld::serializeDynamicsWorldInfo(btSerializer* serializer)
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ #ifdef BT_USE_DOUBLE_PRECISION
+ 	int len = sizeof(btDynamicsWorldDoubleData);
+ 	btChunk* chunk = serializer->allocate(len, 1);
+@@ -1460,6 +1461,7 @@ void btDiscreteDynamicsWorld::serializeDynamicsWorldInfo(btSerializer* serialize
+ 	const char* structType = "btDynamicsWorldFloatData";
+ #endif  //BT_USE_DOUBLE_PRECISION
+ 	serializer->finalizeChunk(chunk, structType, BT_DYNAMICSWORLD_CODE, worldInfo);
++#endif
+ }
+ 
+ void btDiscreteDynamicsWorld::serialize(btSerializer* serializer)
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btRigidBody.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btRigidBody.cpp
+index 27fdead76..84bbcecb9 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btRigidBody.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/Dynamics/btRigidBody.cpp
+@@ -464,6 +464,7 @@ int btRigidBody::calculateSerializeBufferSize() const
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ const char* btRigidBody::serialize(void* dataBuffer, class btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btRigidBodyData* rbd = (btRigidBodyData*)dataBuffer;
+ 
+ 	btCollisionObject::serialize(&rbd->m_collisionObjectData, serializer);
+@@ -493,7 +494,7 @@ const char* btRigidBody::serialize(void* dataBuffer, class btSerializer* seriali
+ #ifdef BT_USE_DOUBLE_PRECISION
+ 	memset(rbd->m_padding, 0, sizeof(rbd->m_padding));
+ #endif
+-
++#endif
+ 	return btRigidBodyDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/Featherstone/btMultiBody.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/Featherstone/btMultiBody.cpp
+index 9862bd2e2..ecd7330f5 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/Featherstone/btMultiBody.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/Featherstone/btMultiBody.cpp
+@@ -1921,7 +1921,7 @@ void btMultiBody::fillConstraintJacobianMultiDof(int link,
+ 		// calculate required normals & positions in the local frames.
+         for (int a = 0; a < numLinksChildToRoot; a++)
+         {
+-            int i = links[numLinksChildToRoot-1-a];
++            int i = int(links[numLinksChildToRoot-1-a]);
+         	// transform to local frame
+ 			const int parent = m_links[i].m_parent;
+ 			const btMatrix3x3 mtx(m_links[i].m_cachedRotParentToThis);
+@@ -2192,6 +2192,7 @@ int btMultiBody::calculateSerializeBufferSize() const
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ const char *btMultiBody::serialize(void *dataBuffer, class btSerializer *serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btMultiBodyData *mbd = (btMultiBodyData *)dataBuffer;
+ 	getBasePos().serialize(mbd->m_baseWorldPosition);
+ 	getWorldToBaseRot().inverse().serialize(mbd->m_baseWorldOrientation);
+@@ -2281,6 +2282,6 @@ const char *btMultiBody::serialize(void *dataBuffer, class btSerializer *seriali
+ #ifdef BT_USE_DOUBLE_PRECISION
+ 	memset(mbd->m_padding, 0, sizeof(mbd->m_padding));
+ #endif
+-
++#endif
+ 	return btMultiBodyDataName;
+ }
+diff --git a/Source/ThirdParty/Bullet/src/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.cpp b/Source/ThirdParty/Bullet/src/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.cpp
+index 954ffaed7..4200c3d0f 100644
+--- a/Source/ThirdParty/Bullet/src/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletDynamics/MLCPSolvers/btLemkeAlgorithm.cpp
+@@ -86,7 +86,7 @@ btVectorXu btLemkeAlgorithm::solve(unsigned int maxloops /* = 0*/)
+ 	//
+ 	A.setSubMatrix(0, 0, dim - 1, dim - 1, ident);
+ 	A.setSubMatrix(0, dim, dim - 1, 2 * dim - 1, mNeg);
+-	A.setSubMatrix(0, 2 * dim, dim - 1, 2 * dim, -1.f);
++    A.setSubMatrix(0, 2 * dim, dim - 1, 2 * dim, btScalar(-1.f));
+ 	A.setSubMatrix(0, 2 * dim + 1, dim - 1, 2 * dim + 1, m_q);
+ 
+ #ifdef BT_DEBUG_OSTREAM
+@@ -284,7 +284,7 @@ bool btLemkeAlgorithm::LexicographicPositive(const btVectorXu& v)
+ 	//  if (DEBUGLEVEL)
+ 	//  cout << "v " << v << endl;
+ 
+-	while (i < v.size() - 1 && fabs(v[i]) < btMachEps())
++    while (i < v.size() - 1 && btFabs(v[i]) < btMachEps())
+ 		i++;
+ 	if (v[i] > 0)
+ 		return true;
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBackwardEulerObjective.cpp b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBackwardEulerObjective.cpp
+index 2455ed213..5147e700e 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBackwardEulerObjective.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBackwardEulerObjective.cpp
+@@ -197,7 +197,7 @@ btScalar btDeformableBackwardEulerObjective::computeNorm(const TVStack& residual
+ 	{
+ 		mag += residual[i].length2();
+ 	}
+-	return std::sqrt(mag);
++    return btSqrt(mag);
+ }
+ 
+ btScalar btDeformableBackwardEulerObjective::totalEnergy(btScalar dt)
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBodySolver.cpp b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBodySolver.cpp
+index 4b11fccec..e57f05315 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBodySolver.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableBodySolver.cpp
+@@ -180,7 +180,7 @@ btScalar btDeformableBodySolver::computeDescentStep(TVStack& ddv, const TVStack&
+ 		}
+ 		inner_product = -inner_product;
+ 	}
+-	else if (std::abs(inner_product) < tol)
++    else if (btFabs(inner_product) < tol)
+ 	{
+ 		if (verbose)
+ 		{
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableGravityForce.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableGravityForce.h
+index d91867f45..fa5411c91 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableGravityForce.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableGravityForce.h
+@@ -95,7 +95,7 @@ public:
+ 				const btSoftBody::Node& node = psb->m_nodes[j];
+ 				if (node.m_im > 0)
+ 				{
+-					e -= m_gravity.dot(node.m_q) / node.m_im;
++                    e -= double(m_gravity.dot(node.m_q) / node.m_im);
+ 				}
+ 			}
+ 		}
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLagrangianForce.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLagrangianForce.h
+index d58d825d1..dee112af3 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLagrangianForce.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLagrangianForce.h
+@@ -177,7 +177,7 @@ public:
+ 			double dphi = 0;
+ 			for (int i = 0; i < dx.size(); ++i)
+ 			{
+-				dphi += dphi_dx[i].dot(dx[i]);
++                dphi += (double)dphi_dx[i].dot(dx[i]);
+ 			}
+ 
+ 			for (int i = 0; i < m_softBodies.size(); ++i)
+@@ -339,9 +339,9 @@ public:
+ 			for (int i = 0; i < df.size(); ++i)
+ 			{
+ 				btVector3 error_vector = f1[i] - f2[i] - 2 * df[i];
+-				error += error_vector.length2();
++                error += (double)error_vector.length2();
+ 			}
+-			error = btSqrt(error);
++            error = sqrt(error);
+ 			errors.push_back(error);
+ 			std::cout << "Iteration = " << it << ", error = " << error << std::endl;
+ 		}
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLinearElasticityForce.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLinearElasticityForce.h
+index 971192050..924a851a4 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLinearElasticityForce.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableLinearElasticityForce.h
+@@ -165,7 +165,7 @@ public:
+ 			{
+ 				btSoftBody::Tetra& tetra = psb->m_tetras[j];
+ 				btSoftBody::TetraScratch& s = psb->m_tetraScratches[j];
+-				energy += tetra.m_element_measure * elasticEnergyDensity(s);
++                energy += double(tetra.m_element_measure * elasticEnergyDensity(s));
+ 			}
+ 		}
+ 		return energy;
+@@ -199,7 +199,7 @@ public:
+ 			for (int j = 0; j < psb->m_nodes.size(); ++j)
+ 			{
+ 				const btSoftBody::Node& node = psb->m_nodes[j];
+-				energy -= dampingForce[node.index].dot(node.m_v) / dt;
++                energy -= double(dampingForce[node.index].dot(node.m_v) / dt);
+ 			}
+ 		}
+ 		return energy;
+@@ -210,8 +210,8 @@ public:
+ 		double density = 0;
+ 		btMatrix3x3 epsilon = (s.m_F + s.m_F.transpose()) * 0.5 - btMatrix3x3::getIdentity();
+ 		btScalar trace = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
+-		density += m_mu * (epsilon[0].length2() + epsilon[1].length2() + epsilon[2].length2());
+-		density += m_lambda * trace * trace * 0.5;
++        density += double(m_mu * (epsilon[0].length2() + epsilon[1].length2() + epsilon[2].length2()));
++        density += double(m_lambda * trace * trace * 0.5);
+ 		return density;
+ 	}
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMassSpringForce.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMassSpringForce.h
+index 8c97bd1ba..6f99fe688 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMassSpringForce.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMassSpringForce.h
+@@ -215,7 +215,7 @@ public:
+ 
+ 				// elastic force
+ 				btVector3 dir = (node2->m_q - node1->m_q);
+-				energy += 0.5 * m_elasticStiffness * (dir.norm() - r) * (dir.norm() - r);
++                energy += 0.5 * double(m_elasticStiffness) * double(dir.norm() - r) * double(dir.norm() - r);
+ 			}
+ 		}
+ 		return energy;
+@@ -248,7 +248,7 @@ public:
+ 			for (int j = 0; j < psb->m_nodes.size(); ++j)
+ 			{
+ 				const btSoftBody::Node& node = psb->m_nodes[j];
+-				energy -= dampingForce[node.index].dot(node.m_v) / dt;
++                energy -= double(dampingForce[node.index].dot(node.m_v) / dt);
+ 			}
+ 		}
+ 		return energy;
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMousePickingForce.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMousePickingForce.h
+index d218d9621..c9004dac7 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMousePickingForce.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMousePickingForce.h
+@@ -104,7 +104,7 @@ public:
+ 				scaled_force.safeNormalize();
+ 				scaled_force *= m_maxForce;
+ 			}
+-			energy += 0.5 * scaled_force.dot(dir);
++            energy += double(0.5 * scaled_force.dot(dir));
+ 		}
+ 		return energy;
+ 	}
+@@ -121,7 +121,7 @@ public:
+ 				btVector3 dir = (m_face.m_n[i]->m_x - m_mouse_pos).normalized();
+ 				scaled_force = m_dampingStiffness * v_diff.dot(dir) * dir;
+ 			}
+-			energy -= scaled_force.dot(m_face.m_n[i]->m_v) / dt;
++            energy -= double(scaled_force.dot(m_face.m_n[i]->m_v) / dt);
+ 		}
+ 		return energy;
+ 	}
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp
+index 631fd5fbe..451bc586f 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp
+@@ -50,7 +50,7 @@ btScalar btDeformableMultiBodyConstraintSolver::solveDeformableGroupIterations(b
+ 					m_analyticsData.m_islandId = bodies[0]->getCompanionId();
+ 				m_analyticsData.m_numBodies = numBodies;
+ 				m_analyticsData.m_numContactManifolds = numManifolds;
+-				m_analyticsData.m_remainingLeastSquaresResidual = m_leastSquaresResidual;
++                m_analyticsData.m_remainingLeastSquaresResidual = double(m_leastSquaresResidual);
+ 				break;
+ 			}
+ 		}
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableNeoHookeanForce.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableNeoHookeanForce.h
+index 60798c5bc..2c49d8b9d 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableNeoHookeanForce.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btDeformableNeoHookeanForce.h
+@@ -152,7 +152,7 @@ public:
+ 			{
+ 				btSoftBody::Tetra& tetra = psb->m_tetras[j];
+ 				btSoftBody::TetraScratch& s = psb->m_tetraScratches[j];
+-				energy += tetra.m_element_measure * elasticEnergyDensity(s);
++                energy += double(tetra.m_element_measure * elasticEnergyDensity(s));
+ 			}
+ 		}
+ 		return energy;
+@@ -186,7 +186,7 @@ public:
+ 			for (int j = 0; j < psb->m_nodes.size(); ++j)
+ 			{
+ 				const btSoftBody::Node& node = psb->m_nodes[j];
+-				energy -= dampingForce[node.index].dot(node.m_v) / dt;
++                energy -= double(dampingForce[node.index].dot(node.m_v) / dt);
+ 			}
+ 		}
+ 		return energy;
+@@ -195,9 +195,9 @@ public:
+ 	double elasticEnergyDensity(const btSoftBody::TetraScratch& s)
+ 	{
+ 		double density = 0;
+-		density += m_mu * 0.5 * (s.m_trace - 3.);
+-		density += m_lambda * 0.5 * (s.m_J - 1. - 0.75 * m_mu / m_lambda) * (s.m_J - 1. - 0.75 * m_mu / m_lambda);
+-		density -= m_mu * 0.5 * log(s.m_trace + 1);
++        density += double(m_mu * 0.5 * (s.m_trace - 3.));
++        density += double(m_lambda * 0.5 * (s.m_J - 1. - 0.75 * m_mu / m_lambda) * (s.m_J - 1. - 0.75 * m_mu / m_lambda));
++        density -= double(m_mu * 0.5 * log(s.m_trace + 1));
+ 		return density;
+ 	}
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBody.cpp b/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBody.cpp
+index d1980ea6c..de864ffc4 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBody.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBody.cpp
+@@ -4308,6 +4308,7 @@ int btSoftBody::calculateSerializeBufferSize() const
+ ///fills the dataBuffer and returns the struct name (and 0 on failure)
+ const char* btSoftBody::serialize(void* dataBuffer, class btSerializer* serializer) const
+ {
++#ifndef BT_USE_FIXED_PRECISION
+ 	btSoftBodyData* sbd = (btSoftBodyData*)dataBuffer;
+ 
+ 	btCollisionObject::serialize(&sbd->m_collisionObjectData, serializer);
+@@ -4682,7 +4683,7 @@ const char* btSoftBody::serialize(void* dataBuffer, class btSerializer* serializ
+ 		}
+ 		serializer->finalizeChunk(chunk, "btSoftBodyJointData", BT_ARRAY_CODE, (void*)&m_joints[0]);
+ 	}
+-
++#endif
+ 	return btSoftBodyDataName;
+ }
+ 
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyHelpers.cpp b/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyHelpers.cpp
+index f63e48f9a..23a8cb590 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyHelpers.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyHelpers.cpp
+@@ -26,6 +26,9 @@ subject to the following restrictions:
+ #include "LinearMath/btConvexHullComputer.h"
+ #include <map>
+ #include <vector>
++#ifdef BT_USE_FIXED_PRECISION
++#include "LinearMath/fixedios.hpp"
++#endif
+ 
+ static void drawVertex(btIDebugDraw* idraw,
+ 					   const btVector3& x, btScalar s, const btVector3& c)
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyInternals.h b/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyInternals.h
+index c17bbb5cd..c9009ba25 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyInternals.h
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/btSoftBodyInternals.h
+@@ -49,9 +49,9 @@ static SIMD_FORCE_INLINE btVector3 generateUnitOrthogonalVector(const btVector3&
+ 	btScalar ux = u.getX();
+ 	btScalar uy = u.getY();
+ 	btScalar uz = u.getZ();
+-	btScalar ax = std::abs(ux);
+-	btScalar ay = std::abs(uy);
+-	btScalar az = std::abs(uz);
++    btScalar ax = btFabs(ux);
++    btScalar ay = btFabs(uy);
++    btScalar az = btFabs(uz);
+ 	btVector3 v;
+ 	if (ax <= ay && ax <= az)
+ 		v = btVector3(0, -uz, uy);
+@@ -66,7 +66,7 @@ static SIMD_FORCE_INLINE btVector3 generateUnitOrthogonalVector(const btVector3&
+ static SIMD_FORCE_INLINE bool proximityTest(const btVector3& x1, const btVector3& x2, const btVector3& x3, const btVector3& x4, const btVector3& normal, const btScalar& mrg, btVector3& bary)
+ {
+ 	btVector3 x43 = x4 - x3;
+-	if (std::abs(x43.dot(normal)) > mrg)
++    if (btFabs(x43.dot(normal)) > mrg)
+ 		return false;
+ 	btVector3 x13 = x1 - x3;
+ 	btVector3 x23 = x2 - x3;
+@@ -81,7 +81,7 @@ static SIMD_FORCE_INLINE bool proximityTest(const btVector3& x1, const btVector3
+ 	btScalar w1 = (b1 * a22 - b2 * a12) / det;
+ 	btScalar w2 = (b2 * a11 - b1 * a12) / det;
+ 	btScalar w3 = 1 - w1 - w2;
+-	btScalar delta = mrg / std::sqrt(0.5 * std::abs(x13.cross(x23).safeNorm()));
++    btScalar delta = mrg / btSqrt(0.5 * btFabs(x13.cross(x23).safeNorm()));
+ 	bary = btVector3(w1, w2, w3);
+ 	for (int i = 0; i < 3; ++i)
+ 	{
+@@ -562,14 +562,14 @@ static SIMD_FORCE_INLINE bool continuousCollisionDetection(const btSoftBody::Fac
+ 	btScalar eps = SAFE_EPSILON;
+ 	int num_roots = 0;
+ 	btScalar roots[3];
+-	if (std::abs(a3) < eps)
++    if (btFabs(a3) < eps)
+ 	{
+ 		// cubic term is zero
+-		if (std::abs(a2) < eps)
++        if (btFabs(a2) < eps)
+ 		{
+-			if (std::abs(a1) < eps)
++            if (btFabs(a1) < eps)
+ 			{
+-				if (std::abs(a0) < eps)
++                if (btFabs(a0) < eps)
+ 				{
+ 					num_roots = 2;
+ 					roots[0] = 0;
+@@ -606,7 +606,7 @@ static SIMD_FORCE_INLINE bool continuousCollisionDetection(const btSoftBody::Fac
+ 	}
+ 	for (int r = 0; r < num_roots; ++r)
+ 	{
+-		double root = roots[r];
++        btScalar root = roots[r];
+ 		if (root <= 0)
+ 			continue;
+ 		if (root > dt + SIMD_EPSILON)
+diff --git a/Source/ThirdParty/Bullet/src/BulletSoftBody/poly34.cpp b/Source/ThirdParty/Bullet/src/BulletSoftBody/poly34.cpp
+index ec7549c8e..c5132e026 100644
+--- a/Source/ThirdParty/Bullet/src/BulletSoftBody/poly34.cpp
++++ b/Source/ThirdParty/Bullet/src/BulletSoftBody/poly34.cpp
+@@ -96,8 +96,8 @@ int SolveP3(btScalar* x, btScalar a, btScalar b, btScalar c)
+ 	}
+ 	else
+ 	{
+-		//A =-pow(fabs(r)+sqrt(r2-q3),1./3);
+-		A = -root3(fabs(r) + sqrt(r2 - q3));
++        //A =-pow(btFabs(r)+sqrt(r2-q3),1./3);
++        A = -root3(btFabs(r) + sqrt(r2 - q3));
+ 		if (r < 0)
+ 			A = -A;
+ 		B = (A == 0 ? 0 : q / A);
+@@ -106,7 +106,7 @@ int SolveP3(btScalar* x, btScalar a, btScalar b, btScalar c)
+ 		x[0] = (A + B) - a;
+ 		x[1] = -0.5 * (A + B) - a;
+ 		x[2] = 0.5 * sqrt(3.) * (A - B);
+-		if (fabs(x[2]) < eps)
++        if (btFabs(x[2]) < eps)
+ 		{
+ 			x[2] = x[1];
+ 			return (2);
+@@ -208,7 +208,7 @@ static void dblSort3(btScalar& a, btScalar& b, btScalar& c)  // make: a <= b <=
+ int SolveP4De(btScalar* x, btScalar b, btScalar c, btScalar d)  // solve equation x^4 + b*x^2 + c*x + d
+ {
+ 	//if( c==0 ) return SolveP4Bi(x,b,d); // After that, c!=0
+-	if (fabs(c) < 1e-14 * (fabs(b) + fabs(d)))
++    if (btFabs(c) < 1e-14 * (btFabs(b) + btFabs(d)))
+ 		return SolveP4Bi(x, b, d);  // After that, c!=0
+ 
+ 	int res3 = SolveP3(x, 2 * b, b * b - 4 * d, -c * c);  // solve resolvent
+@@ -341,19 +341,19 @@ int SolveP4(btScalar* x, btScalar a, btScalar b, btScalar c, btScalar d)
+ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)  // return real root of x^5 + a*x^4 + b*x^3 + c*x^2 + d*x + e = 0
+ {
+ 	int cnt;
+-	if (fabs(e) < eps)
++    if (btFabs(e) < eps)
+ 		return 0;
+ 
+-	btScalar brd = fabs(a);  // brd - border of real roots
+-	if (fabs(b) > brd)
+-		brd = fabs(b);
+-	if (fabs(c) > brd)
+-		brd = fabs(c);
+-	if (fabs(d) > brd)
+-		brd = fabs(d);
+-	if (fabs(e) > brd)
+-		brd = fabs(e);
+-	brd++;  // brd - border of real roots
++    btScalar brd = btFabs(a);  // brd - border of real roots
++    if (btFabs(b) > brd)
++        brd = btFabs(b);
++    if (btFabs(c) > brd)
++        brd = btFabs(c);
++    if (btFabs(d) > brd)
++        brd = btFabs(d);
++    if (btFabs(e) > brd)
++        brd = btFabs(e);
++    brd+=1;  // brd - border of real roots
+ 
+ 	btScalar x0, f0;       // less than root
+ 	btScalar x1, f1;       // greater than root
+@@ -377,9 +377,9 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)
+ 		x2 = -0.01 * brd;
+ 	}  // negative root
+ 
+-	if (fabs(f0) < eps)
++    if (btFabs(f0) < eps)
+ 		return x0;
+-	if (fabs(f1) < eps)
++    if (btFabs(f1) < eps)
+ 		return x1;
+ 
+ 	// now x0<x1, f(x0)<0, f(x1)>0
+@@ -389,7 +389,7 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)
+ 		x2 = (x0 + x1) / 2;  // next point
+ 		//x2 = x0 - f0*(x1 - x0) / (f1 - f0);        // next point
+ 		f2 = F5(x2);  // f(x2)
+-		if (fabs(f2) < eps)
++        if (btFabs(f2) < eps)
+ 			return x2;
+ 		if (f2 > 0)
+ 		{
+@@ -414,7 +414,7 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)
+ 		if (x2 <= x0 || x2 >= x1)
+ 			x2 = (x0 + x1) / 2;  // now  x0 < x2 < x1
+ 		f2 = F5(x2);             // f(x2)
+-		if (fabs(f2) < eps)
++        if (btFabs(f2) < eps)
+ 			return x2;
+ 		if (f2 > 0)
+ 		{
+@@ -427,14 +427,14 @@ btScalar SolveP5_1(btScalar a, btScalar b, btScalar c, btScalar d, btScalar e)
+ 			f0 = f2;
+ 		}
+ 		f2s = (((5 * x2 + 4 * a) * x2 + 3 * b) * x2 + 2 * c) * x2 + d;  // f'(x2)
+-		if (fabs(f2s) < eps)
++        if (btFabs(f2s) < eps)
+ 		{
+ 			x2 = 1e99;
+ 			continue;
+ 		}
+ 		dx = f2 / f2s;
+ 		x2 -= dx;
+-	} while (fabs(dx) > eps);
++    } while (btFabs(dx) > eps);
+ 	return x2;
+ }  // SolveP5_1(btScalar a,btScalar b,btScalar c,btScalar d,btScalar e)    // return real root of x^5 + a*x^4 + b*x^3 + c*x^2 + d*x + e = 0
+ //-----------------------------------------------------------------------------
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btConvexHull.cpp b/Source/ThirdParty/Bullet/src/LinearMath/btConvexHull.cpp
+index e7de2a369..fdb396a24 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btConvexHull.cpp
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btConvexHull.cpp
+@@ -115,7 +115,7 @@ btScalar DistanceBetweenLines(const btVector3 &ustart, const btVector3 &udir, co
+ 
+ 	btScalar distu = -btDot(cp, ustart);
+ 	btScalar distv = -btDot(cp, vstart);
+-	btScalar dist = (btScalar)fabs(distu - distv);
++    btScalar dist = btFabs(distu - distv);
+ 	if (upoint)
+ 	{
+ 		btPlane plane;
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.cpp b/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.cpp
+index 12125fd2d..2c3edf31e 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.cpp
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.cpp
+@@ -830,6 +830,9 @@ public:
+ 	Vertex* vertexList;
+ 
+ 	void compute(const void* coords, bool doubleCoords, int stride, int count);
++#ifdef BT_USE_FIXED_PRECISION
++    void compute(const btScalar* coords, int stride, int count);
++#endif
+ 
+ 	btVector3 getCoordinates(const Vertex* v);
+ 
+@@ -1953,6 +1956,99 @@ public:
+ 	}
+ };
+ 
++#ifdef BT_USE_FIXED_PRECISION
++void btConvexHullInternal::compute(const btScalar* coords, int stride, int count)
++{
++    btVector3 min(btScalar(1e30), btScalar(1e30), btScalar(1e30)), max(btScalar(-1e30), btScalar(-1e30), btScalar(-1e30));
++    const char* ptr = (const char*)coords;
++    for (int i = 0; i < count; i++)
++    {
++        const btScalar* v = (const btScalar*)ptr;
++        btVector3 p((btScalar)v[0], (btScalar)v[1], (btScalar)v[2]);
++        ptr += stride;
++        min.setMin(p);
++        max.setMax(p);
++    }
++
++    btVector3 s = max - min;
++    maxAxis = s.maxAxis();
++    minAxis = s.minAxis();
++    if (minAxis == maxAxis)
++    {
++        minAxis = (maxAxis + 1) % 3;
++    }
++    medAxis = 3 - maxAxis - minAxis;
++
++    s /= btScalar(10216);
++    if (((medAxis + 1) % 3) != maxAxis)
++    {
++        s *= -1;
++    }
++    scaling = s;
++
++    if (s[0] != 0)
++    {
++        s[0] = btScalar(1) / s[0];
++    }
++    if (s[1] != 0)
++    {
++        s[1] = btScalar(1) / s[1];
++    }
++    if (s[2] != 0)
++    {
++        s[2] = btScalar(1) / s[2];
++    }
++
++    center = (min + max) * btScalar(0.5);
++
++    btAlignedObjectArray<Point32> points;
++    points.resize(count);
++    ptr = (const char*)coords;
++    for (int i = 0; i < count; i++)
++    {
++        const btScalar* v = (const btScalar*)ptr;
++        btVector3 p((btScalar)v[0], (btScalar)v[1], (btScalar)v[2]);
++        ptr += stride;
++        p = (p - center) * s;
++        points[i].x = (int32_t)p[medAxis];
++        points[i].y = (int32_t)p[maxAxis];
++        points[i].z = (int32_t)p[minAxis];
++        points[i].index = i;
++    }
++
++    points.quickSort(pointCmp());
++
++    vertexPool.reset();
++    vertexPool.setArraySize(count);
++    originalVertices.resize(count);
++    for (int i = 0; i < count; i++)
++    {
++        Vertex* v = vertexPool.newObject();
++        v->edges = NULL;
++        v->point = points[i];
++        v->copy = -1;
++        originalVertices[i] = v;
++    }
++
++    points.clear();
++
++    edgePool.reset();
++    edgePool.setArraySize(6 * count);
++
++    usedEdgePairs = 0;
++    maxUsedEdgePairs = 0;
++
++    mergeStamp = -3;
++
++    IntermediateHull hull;
++    computeInternal(0, count, hull);
++    vertexList = hull.minXy;
++#ifdef DEBUG_CONVEX_HULL
++    printf("max. edges %d (3v = %d)", maxUsedEdgePairs, 3 * count);
++#endif
++}
++#endif
++
+ void btConvexHullInternal::compute(const void* coords, bool doubleCoords, int stride, int count)
+ {
+ 	btVector3 min(btScalar(1e30), btScalar(1e30), btScalar(1e30)), max(btScalar(-1e30), btScalar(-1e30), btScalar(-1e30));
+@@ -2758,3 +2854,115 @@ btScalar btConvexHullComputer::compute(const void* coords, bool doubleCoords, in
+ 
+ 	return shift;
+ }
++
++#ifdef BT_USE_FIXED_PRECISION
++btScalar btConvexHullComputer::compute(const btScalar* coords, int stride, int count, btScalar shrink, btScalar shrinkClamp)
++{
++
++    if (count <= 0)
++    {
++        vertices.clear();
++        edges.clear();
++        faces.clear();
++        return 0;
++    }
++
++    btConvexHullInternal hull;
++    hull.compute(coords, stride, count);
++
++    btScalar shift = 0;
++    if ((shrink > 0) && ((shift = hull.shrink(shrink, shrinkClamp)) < 0))
++    {
++        vertices.clear();
++        edges.clear();
++        faces.clear();
++        return shift;
++    }
++
++    vertices.resize(0);
++    original_vertex_index.resize(0);
++    edges.resize(0);
++    faces.resize(0);
++
++    btAlignedObjectArray<btConvexHullInternal::Vertex*> oldVertices;
++    getVertexCopy(hull.vertexList, oldVertices);
++    int copied = 0;
++    while (copied < oldVertices.size())
++    {
++        btConvexHullInternal::Vertex* v = oldVertices[copied];
++        vertices.push_back(hull.getCoordinates(v));
++        original_vertex_index.push_back(v->point.index);
++        btConvexHullInternal::Edge* firstEdge = v->edges;
++        if (firstEdge)
++        {
++            int firstCopy = -1;
++            int prevCopy = -1;
++            btConvexHullInternal::Edge* e = firstEdge;
++            do
++            {
++                if (e->copy < 0)
++                {
++                    int s = edges.size();
++                    edges.push_back(Edge());
++                    edges.push_back(Edge());
++                    Edge* c = &edges[s];
++                    Edge* r = &edges[s + 1];
++                    e->copy = s;
++                    e->reverse->copy = s + 1;
++                    c->reverse = 1;
++                    r->reverse = -1;
++                    c->targetVertex = getVertexCopy(e->target, oldVertices);
++                    r->targetVertex = copied;
++#ifdef DEBUG_CONVEX_HULL
++                    printf("      CREATE: Vertex *%d has edge to *%d\n", copied, c->getTargetVertex());
++#endif
++                }
++                if (prevCopy >= 0)
++                {
++                    edges[e->copy].next = prevCopy - e->copy;
++                }
++                else
++                {
++                    firstCopy = e->copy;
++                }
++                prevCopy = e->copy;
++                e = e->next;
++            } while (e != firstEdge);
++            edges[firstCopy].next = prevCopy - firstCopy;
++        }
++        copied++;
++    }
++
++    for (int i = 0; i < copied; i++)
++    {
++        btConvexHullInternal::Vertex* v = oldVertices[i];
++        btConvexHullInternal::Edge* firstEdge = v->edges;
++        if (firstEdge)
++        {
++            btConvexHullInternal::Edge* e = firstEdge;
++            do
++            {
++                if (e->copy >= 0)
++                {
++#ifdef DEBUG_CONVEX_HULL
++                    printf("Vertex *%d has edge to *%d\n", i, edges[e->copy].getTargetVertex());
++#endif
++                    faces.push_back(e->copy);
++                    btConvexHullInternal::Edge* f = e;
++                    do
++                    {
++#ifdef DEBUG_CONVEX_HULL
++                        printf("   Face *%d\n", edges[f->copy].getTargetVertex());
++#endif
++                        f->copy = -1;
++                        f = f->reverse->prev;
++                    } while (f != e);
++                }
++                e = e->next;
++            } while (e != firstEdge);
++        }
++    }
++
++    return shift;
++}
++#endif
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.h b/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.h
+index 18b26eea9..e047ee5a6 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btConvexHullComputer.h
+@@ -97,6 +97,11 @@ public:
+ 	{
+ 		return compute(coords, true, stride, count, shrink, shrinkClamp);
+ 	}
++
++#ifdef BT_USE_FIXED_PRECISION
++    // same as above, but fixed point precision
++    btScalar compute(const btScalar* coords, int stride, int count, btScalar shrink, btScalar shrinkClamp);
++#endif
+ };
+ 
+ #endif  //BT_CONVEX_HULL_COMPUTER_H
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btMatrix3x3.h b/Source/ThirdParty/Bullet/src/LinearMath/btMatrix3x3.h
+index 9c90fee1d..b0d18ee89 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btMatrix3x3.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btMatrix3x3.h
+@@ -39,6 +39,8 @@ const btSimdFloat4 ATTRIBUTE_ALIGNED16(v0010) = {0.0f, 0.0f, 1.0f, 0.0f};
+ 
+ #ifdef BT_USE_DOUBLE_PRECISION
+ #define btMatrix3x3Data btMatrix3x3DoubleData
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btMatrix3x3Data btMatrix3x3FixedData
+ #else
+ #define btMatrix3x3Data btMatrix3x3FloatData
+ #endif  //BT_USE_DOUBLE_PRECISION
+@@ -1398,6 +1400,12 @@ struct btMatrix3x3DoubleData
+ 	btVector3DoubleData m_el[3];
+ };
+ 
++///for serialization
++struct btMatrix3x3FixedData
++{
++    btVector3FixedData m_el[3];
++};
++
+ SIMD_FORCE_INLINE void btMatrix3x3::serialize(struct btMatrix3x3Data& dataOut) const
+ {
+ 	for (int i = 0; i < 3; i++)
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btMatrixX.h b/Source/ThirdParty/Bullet/src/LinearMath/btMatrixX.h
+index bb0f0dd25..f44fcd45c 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btMatrixX.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btMatrixX.h
+@@ -470,6 +470,11 @@ typedef btVectorX<float> btVectorXf;
+ typedef btMatrixX<double> btMatrixXd;
+ typedef btVectorX<double> btVectorXd;
+ 
++#ifdef BT_USE_FIXED_PRECISION
++typedef btMatrixX<btScalar> btMatrixXq;
++typedef btVectorX<btScalar> btVectorXq;
++#endif
++
+ #ifdef BT_DEBUG_OSTREAM
+ template <typename T>
+ std::ostream& operator<<(std::ostream& os, const btMatrixX<T>& mat)
+@@ -521,9 +526,19 @@ inline void setElem(btMatrixXf& mat, int row, int col, float val)
+ 	mat.setElem(row, col, val);
+ }
+ 
++#ifdef BT_USE_FIXED_PRECISION
++inline void setElem(btMatrixXq& mat, int row, int col, btScalar val)
++{
++    mat.setElem(row, col, val);
++}
++#endif
++
+ #ifdef BT_USE_DOUBLE_PRECISION
+ #define btVectorXu btVectorXd
+ #define btMatrixXu btMatrixXd
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btVectorXu btVectorXq
++#define btMatrixXu btMatrixXq
+ #else
+ #define btVectorXu btVectorXf
+ #define btMatrixXu btMatrixXf
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btModifiedGramSchmidt.h b/Source/ThirdParty/Bullet/src/LinearMath/btModifiedGramSchmidt.h
+index 33bab8d65..73f813ced 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btModifiedGramSchmidt.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btModifiedGramSchmidt.h
+@@ -10,6 +10,9 @@
+ 
+ #include "btReducedVector.h"
+ #include "btAlignedObjectArray.h"
++#ifdef BT_USE_FIXED_PRECISION
++#include "fixedios.hpp"
++#endif
+ #include <iostream>
+ #include <cmath>
+ template<class TV>
+@@ -63,14 +66,14 @@ public:
+             {
+                 if (i == j)
+                 {
+-                    if (std::abs(1.0-m_out[i].dot(m_out[j])) > eps)// && std::abs(m_out[i].dot(m_out[j])) > eps)
++                    if (btFabs(1.0-m_out[i].dot(m_out[j])) > eps)// && std::abs(m_out[i].dot(m_out[j])) > eps)
+                     {
+                         printf("vec[%d] is not unit, norm squared = %f\n", i,m_out[i].dot(m_out[j]));
+                     }
+                 }
+                 else
+                 {
+-                    if (std::abs(m_out[i].dot(m_out[j])) > eps)
++                    if (btFabs(m_out[i].dot(m_out[j])) > eps)
+                     {
+                         printf("vec[%d] and vec[%d] is not orthogonal, dot product = %f\n", i, j, m_out[i].dot(m_out[j]));
+                     }
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btQuaternion.h b/Source/ThirdParty/Bullet/src/LinearMath/btQuaternion.h
+index 53e8169b8..13a73185f 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btQuaternion.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btQuaternion.h
+@@ -21,6 +21,9 @@ subject to the following restrictions:
+ #ifdef BT_USE_DOUBLE_PRECISION
+ #define btQuaternionData btQuaternionDoubleData
+ #define btQuaternionDataName "btQuaternionDoubleData"
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btQuaternionData btQuaternionFixedData
++#define btQuaternionDataName "btQuaternionFixedData"
+ #else
+ #define btQuaternionData btQuaternionFloatData
+ #define btQuaternionDataName "btQuaternionFloatData"
+@@ -973,6 +976,11 @@ struct btQuaternionDoubleData
+ 	double m_floats[4];
+ };
+ 
++struct btQuaternionFixedData
++{
++    fpm::fixed_16_16 m_floats[4];
++};
++
+ SIMD_FORCE_INLINE void btQuaternion::serializeFloat(struct btQuaternionFloatData& dataOut) const
+ {
+ 	///could also do a memcpy, check if it is worth it
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btReducedVector.cpp b/Source/ThirdParty/Bullet/src/LinearMath/btReducedVector.cpp
+index 1539584e7..b37d120e4 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btReducedVector.cpp
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btReducedVector.cpp
+@@ -28,7 +28,7 @@ void btReducedVector::normalize()
+         m_vecs.clear();
+         return;
+     }
+-    *this /= std::sqrt(this->length2());
++    *this /= btSqrt(this->length2());
+ }
+ 
+ bool btReducedVector::testAdd() const
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btScalar.h b/Source/ThirdParty/Bullet/src/LinearMath/btScalar.h
+index cb1a7753f..9c64057f0 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btScalar.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btScalar.h
+@@ -26,6 +26,11 @@ subject to the following restrictions:
+ #include <stdlib.h>  //size_t for MSVC 6.0
+ #include <float.h>
+ 
++// #include "fixed.h"
++#include "fixed.hpp" // from fpm
++#include "fixedmath.hpp" // from fpm
++#define BT_USE_FIXED_PRECISION
++
+ /* SVN $Revision$ on $Date$ from http://bullet.googlecode.com*/
+ #define BT_BULLET_VERSION 305
+ 
+@@ -232,7 +237,7 @@ inline int btIsDoublePrecision()
+ 			//	#if defined (__i386__) || defined (__x86_64__)
+ 
+ 			// Urho3D: allow to disable SSE/NEON and let Linux, MinGW, & Android platforms in besides Apple
+-			#if (!defined (BT_USE_DOUBLE_PRECISION))
++            #if (!defined (BT_USE_DOUBLE_PRECISION) && !defined (BT_USE_FIXED_PRECISION))
+ 				#if defined(__SSE__)
+ 
+ 					#define BT_USE_SIMD_VECTOR3
+@@ -330,6 +335,24 @@ inline int btIsDoublePrecision()
+ 	typedef double btScalar;
+ 	//this number could be bigger in double precision
+ 	#define BT_LARGE_FLOAT 1e30
++#elif defined(BT_USE_FIXED_PRECISION)
++    //typedef numeric::fixed<16,16> btScalar;
++    using btScalar = fpm::fixed_16_16;
++//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 13>;
++//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 10>; // runs, but has instability
++//    using btScalar=fpm::fixed<std::int64_t, __int128_t, 20>; // runs, instability gone, but not particularly fast (though it is a debug build)
++//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 13>; // Fails because of the box for floorNode->SetScale(Vector3(1000.0f, 1.0f, 1000.0f));
++                                                                 // But I removed that, chaning it to a scale of 100, and it works okay.
++                                                                 // Still a bit of popping, but not as much. I suspect it is my #define INVALID_CHECK_RETURN
++//    using btScalar=fpm::fixed<std::int32_t, std::int64_t, 14>; // Fails because of the box for floorNode->SetScale(Vector3(1000.0f, 1.0f, 1000.0f));
++
++    //keep BT_LARGE_FLOAT*BT_LARGE_FLOAT < FLT_MAX
++    //#define BT_LARGE_FLOAT numeric::fixed<16,16>(1<<14) // 16k
++//    #define BT_LARGE_FLOAT (fpm::fixed_16_16(1<<14))
++//    #define BT_LARGE_FLOAT btScalar::from_raw_value(1<<(btScalar::total_bits()-4))
++//    #define BT_LARGE_FLOAT (fpm::fixed_16_16(1<<10)) //(32-10)/2 - 1
++    // CAUSES Most Vexing Parse static constexpr btScalar BT_LARGE_FLOAT = 1<<(btScalar::integer_bits()/2-1);
++    #define BT_LARGE_FLOAT (btScalar(1<<(btScalar::integer_bits()/2-1)))
+ #else
+ 	typedef float btScalar;
+ 	//keep BT_LARGE_FLOAT*BT_LARGE_FLOAT < FLT_MAX
+@@ -485,6 +508,37 @@ inline int btIsDoublePrecision()
+ 	SIMD_FORCE_INLINE btScalar btLog(btScalar x) { return log(x); }
+ 	SIMD_FORCE_INLINE btScalar btPow(btScalar x, btScalar y) { return pow(x, y); }
+ 	SIMD_FORCE_INLINE btScalar btFmod(btScalar x, btScalar y) { return fmod(x, y); }
++    SIMD_FORCE_INLINE btScalar btFloor(btScalar x) { return floor(x); }
++
++#elif defined(BT_USE_FIXED_PRECISION)
++
++    SIMD_FORCE_INLINE btScalar btSqrt(btScalar x)
++    {
++        return fpm::sqrt(x);
++    }
++    SIMD_FORCE_INLINE btScalar btFabs(btScalar x) { return fpm::abs(x); }
++    SIMD_FORCE_INLINE btScalar btCos(btScalar x) { return fpm::cos(x); }
++    SIMD_FORCE_INLINE btScalar btSin(btScalar x) { return fpm::sin(x); }
++    SIMD_FORCE_INLINE btScalar btTan(btScalar x) { return fpm::tan(x); }
++    SIMD_FORCE_INLINE btScalar btAcos(btScalar x)
++    {
++        if (x < btScalar(-1)) x = btScalar(-1);
++        if (x > btScalar(1)) x = btScalar(1);
++        return fpm::acos(x);
++    }
++    SIMD_FORCE_INLINE btScalar btAsin(btScalar x)
++    {
++        if (x < btScalar(-1)) x = btScalar(-1);
++        if (x > btScalar(1)) x = btScalar(1);
++        return fpm::asin(x);
++    }
++    SIMD_FORCE_INLINE btScalar btAtan(btScalar x) { return fpm::atan(x); }
++    SIMD_FORCE_INLINE btScalar btAtan2(btScalar x, btScalar y) { return fpm::atan2(x, y); }
++    SIMD_FORCE_INLINE btScalar btExp(btScalar x) { return fpm::exp(x); }
++    SIMD_FORCE_INLINE btScalar btLog(btScalar x) { return fpm::log(x); }
++    SIMD_FORCE_INLINE btScalar btPow(btScalar x, btScalar y) { return fpm::pow(x, y); }
++    SIMD_FORCE_INLINE btScalar btFmod(btScalar x, btScalar y) { return fpm::fmod(x, y); }
++    SIMD_FORCE_INLINE btScalar btFloor(btScalar x) { return fpm::floor(x); }
+ 
+ #else//BT_USE_DOUBLE_PRECISION
+ 
+@@ -548,11 +602,20 @@ inline int btIsDoublePrecision()
+ 
+ #endif//BT_USE_DOUBLE_PRECISION
+ 
++#ifndef BT_USE_FIXED_PRECISION
+ #define SIMD_PI btScalar(3.1415926535897932384626433832795029)
+ #define SIMD_2_PI (btScalar(2.0) * SIMD_PI)
+ #define SIMD_HALF_PI (SIMD_PI * btScalar(0.5))
+ #define SIMD_RADS_PER_DEG (SIMD_2_PI / btScalar(360.0))
+ #define SIMD_DEGS_PER_RAD (btScalar(360.0) / SIMD_2_PI)
++#else
++#define SIMD_PI btScalar::pi()
++#define SIMD_2_PI btScalar::two_pi()
++#define SIMD_HALF_PI btScalar::half_pi()
++#define SIMD_RADS_PER_DEG (btScalar::two_pi() / btScalar(360.0))
++#define SIMD_DEGS_PER_RAD (btScalar(360.0) / btScalar::two_pi())
++#endif
++
+ #define SIMDSQRT12 btScalar(0.7071067811865475244008443621048490)
+ #define btRecipSqrt(x) ((btScalar)(btScalar(1.0) / btSqrt(btScalar(x)))) /* reciprocal square root */
+ #define btRecip(x) (btScalar(1.0) / btScalar(x))
+@@ -564,6 +627,13 @@ inline int btIsDoublePrecision()
+ 	#define BT_ZERO 0.0
+ 	#define BT_TWO 2.0
+ 	#define BT_HALF 0.5
++#elif defined(BT_USE_FIXED_PRECISION)
++    #define SIMD_EPSILON std::numeric_limits<btScalar>::epsilon()
++    #define SIMD_INFINITY std::numeric_limits<btScalar>::max()
++    #define BT_ONE btScalar(1)
++    #define BT_ZERO btScalar(0)
++    #define BT_TWO btScalar(2)
++    #define BT_HALF btScalar(0.5)
+ #else
+ 	#define SIMD_EPSILON FLT_EPSILON
+ 	#define SIMD_INFINITY FLT_MAX
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btTransform.h b/Source/ThirdParty/Bullet/src/LinearMath/btTransform.h
+index 6f2f99818..6b0de8bec 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btTransform.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btTransform.h
+@@ -19,6 +19,8 @@ subject to the following restrictions:
+ 
+ #ifdef BT_USE_DOUBLE_PRECISION
+ #define btTransformData btTransformDoubleData
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btTransformData btTransformFixedData
+ #else
+ #define btTransformData btTransformFloatData
+ #endif
+@@ -253,6 +255,13 @@ struct btTransformDoubleData
+ 	btVector3DoubleData m_origin;
+ };
+ 
++
++struct btTransformFixedData
++{
++    btMatrix3x3FixedData m_basis;
++    btVector3FixedData m_origin;
++};
++
+ SIMD_FORCE_INLINE void btTransform::serialize(btTransformData& dataOut) const
+ {
+ 	m_basis.serialize(dataOut.m_basis);
+diff --git a/Source/ThirdParty/Bullet/src/LinearMath/btVector3.h b/Source/ThirdParty/Bullet/src/LinearMath/btVector3.h
+index 35494c0f4..271696717 100644
+--- a/Source/ThirdParty/Bullet/src/LinearMath/btVector3.h
++++ b/Source/ThirdParty/Bullet/src/LinearMath/btVector3.h
+@@ -25,6 +25,9 @@ subject to the following restrictions:
+ #ifdef BT_USE_DOUBLE_PRECISION
+ #define btVector3Data btVector3DoubleData
+ #define btVector3DataName "btVector3DoubleData"
++#elif defined(BT_USE_FIXED_PRECISION)
++#define btVector3Data btVector3FixedData
++#define btVector3DataName "btVector3FixedData"
+ #else
+ #define btVector3Data btVector3FloatData
+ #define btVector3DataName "btVector3FloatData"
+@@ -258,7 +261,11 @@ public:
+ 	/**@brief Return the length of the vector */
+ 	SIMD_FORCE_INLINE btScalar length() const
+ 	{
++#ifndef BT_USE_FIXED_PRECISION
+ 		return btSqrt(length2());
++#else
++        return fpm::hypot(m_floats[0],m_floats[1],m_floats[2]);
++#endif
+ 	}
+ 
+ 	/**@brief Return the norm (length) of the vector */
+@@ -270,11 +277,15 @@ public:
+ 	/**@brief Return the norm (length) of the vector */
+ 	SIMD_FORCE_INLINE btScalar safeNorm() const
+ 	{
++#ifndef BT_USE_FIXED_PRECISION
+ 		btScalar d = length2();
+ 		//workaround for some clang/gcc issue of sqrtf(tiny number) = -INF
+ 		if (d > SIMD_EPSILON)
+ 			return btSqrt(d);
+ 		return btScalar(0);
++#else
++        return fpm::hypot(m_floats[0],m_floats[1],m_floats[2]);
++#endif
+ 	}
+ 
+ 	/**@brief Return the distance squared between the ends of this and another vector
+@@ -698,6 +709,8 @@ public:
+ 
+ 	SIMD_FORCE_INLINE void deSerialize(const struct btVector3FloatData& dataIn);
+ 
++    SIMD_FORCE_INLINE void deSerialize(const struct btVector3FixedData& dataIn);
++
+ 	SIMD_FORCE_INLINE void serializeFloat(struct btVector3FloatData & dataOut) const;
+ 
+ 	SIMD_FORCE_INLINE void deSerializeFloat(const struct btVector3FloatData& dataIn);
+@@ -1296,6 +1309,11 @@ struct btVector3DoubleData
+ 	double m_floats[4];
+ };
+ 
++struct btVector3FixedData
++{
++    fpm::fixed_16_16 m_floats[4];
++};
++
+ SIMD_FORCE_INLINE void btVector3::serializeFloat(struct btVector3FloatData& dataOut) const
+ {
+ 	///could also do a memcpy, check if it is worth it
+@@ -1341,4 +1359,10 @@ SIMD_FORCE_INLINE void btVector3::deSerialize(const struct btVector3DoubleData&
+ 		m_floats[i] = (btScalar)dataIn.m_floats[i];
+ }
+ 
++SIMD_FORCE_INLINE void btVector3::deSerialize(const struct btVector3FixedData& dataIn)
++{
++    for (int i = 0; i < 4; i++)
++        m_floats[i] = (btScalar)dataIn.m_floats[i];
++}
++
+ #endif  //BT_VECTOR3_H
+diff --git a/Source/Urho3D/Physics/PhysicsUtils.h b/Source/Urho3D/Physics/PhysicsUtils.h
+index f6f65cf37..9c87847e0 100644
+--- a/Source/Urho3D/Physics/PhysicsUtils.h
++++ b/Source/Urho3D/Physics/PhysicsUtils.h
+@@ -46,12 +46,12 @@ inline btQuaternion ToBtQuaternion(const Quaternion& quaternion)
+ 
+ inline Vector3 ToVector3(const btVector3& vector)
+ {
+-    return Vector3(vector.x(), vector.y(), vector.z());
++    return Vector3(float(vector.x()), float(vector.y()), float(vector.z()));
+ }
+ 
+ inline Quaternion ToQuaternion(const btQuaternion& quaternion)
+ {
+-    return Quaternion(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z());
++    return Quaternion(float(quaternion.w()), float(quaternion.x()), float(quaternion.y()), float(quaternion.z()));
+ }
+ 
+ inline bool HasWorldScaleChanged(const Vector3& oldWorldScale, const Vector3& newWorldScale)
+diff --git a/Source/Urho3D/Physics/PhysicsWorld.cpp b/Source/Urho3D/Physics/PhysicsWorld.cpp
+index d866c71b8..4efe88682 100644
+--- a/Source/Urho3D/Physics/PhysicsWorld.cpp
++++ b/Source/Urho3D/Physics/PhysicsWorld.cpp
+@@ -68,12 +68,12 @@ static bool CompareRaycastResults(const PhysicsRaycastResult& lhs, const Physics
+ 
+ void InternalPreTickCallback(btDynamicsWorld* world, btScalar timeStep)
+ {
+-    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PreStep(timeStep);
++    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PreStep((float)timeStep);
+ }
+ 
+ void InternalTickCallback(btDynamicsWorld* world, btScalar timeStep)
+ {
+-    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PostStep(timeStep);
++    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PostStep((float)timeStep);
+ }
+ 
+ static bool CustomMaterialCombinerCallback(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0,
+@@ -223,7 +223,7 @@ bool PhysicsWorld::isVisible(const btVector3& aabbMin, const btVector3& aabbMax)
+ void PhysicsWorld::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
+ {
+     if (debugRenderer_)
+-        debugRenderer_->AddLine(ToVector3(from), ToVector3(to), Color(color.x(), color.y(), color.z()), debugDepthTest_);
++        debugRenderer_->AddLine(ToVector3(from), ToVector3(to), Color((float)color.x(), (float)color.y(), (float)color.z()), debugDepthTest_);
+ }
+ 
+ void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+@@ -390,7 +390,7 @@ void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& r
+         newResult.position_ = ToVector3(rayCallback.m_hitPointWorld[i]);
+         newResult.normal_ = ToVector3(rayCallback.m_hitNormalWorld[i]);
+         newResult.distance_ = (newResult.position_ - ray.origin_).Length();
+-        newResult.hitFraction_ = rayCallback.m_closestHitFraction;
++        newResult.hitFraction_ = (float)rayCallback.m_closestHitFraction;
+         result.Push(newResult);
+     }
+ 
+@@ -416,7 +416,7 @@ void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, f
+         result.position_ = ToVector3(rayCallback.m_hitPointWorld);
+         result.normal_ = ToVector3(rayCallback.m_hitNormalWorld);
+         result.distance_ = (result.position_ - ray.origin_).Length();
+-        result.hitFraction_ = rayCallback.m_closestHitFraction;
++        result.hitFraction_ = (float)rayCallback.m_closestHitFraction;
+         result.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObject->getUserPointer());
+     }
+     else
+@@ -462,7 +462,7 @@ void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ra
+             result.position_ = ToVector3(rayCallback.m_hitPointWorld);
+             result.normal_ = ToVector3(rayCallback.m_hitNormalWorld);
+             result.distance_ = (result.position_ - ray.origin_).Length();
+-            result.hitFraction_ = rayCallback.m_closestHitFraction;
++            result.hitFraction_ = (float)rayCallback.m_closestHitFraction;
+             result.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObject->getUserPointer());
+             // No need to cast the rest of the segments
+             return;
+@@ -504,8 +504,8 @@ void PhysicsWorld::SphereCast(PhysicsRaycastResult& result, const Ray& ray, floa
+         result.body_ = static_cast<RigidBody*>(convexCallback.m_hitCollisionObject->getUserPointer());
+         result.position_ = ToVector3(convexCallback.m_hitPointWorld);
+         result.normal_ = ToVector3(convexCallback.m_hitNormalWorld);
+-        result.distance_ = convexCallback.m_closestHitFraction * (endPos - ray.origin_).Length();
+-        result.hitFraction_ = convexCallback.m_closestHitFraction;
++        result.distance_ = (float)convexCallback.m_closestHitFraction * (endPos - ray.origin_).Length();
++        result.hitFraction_ = (float)convexCallback.m_closestHitFraction;
+     }
+     else
+     {
+@@ -598,8 +598,8 @@ void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, btCollisionShape* sh
+         result.body_ = static_cast<RigidBody*>(convexCallback.m_hitCollisionObject->getUserPointer());
+         result.position_ = ToVector3(convexCallback.m_hitPointWorld);
+         result.normal_ = ToVector3(convexCallback.m_hitNormalWorld);
+-        result.distance_ = convexCallback.m_closestHitFraction * (endPos - startPos).Length();
+-        result.hitFraction_ = convexCallback.m_closestHitFraction;
++        result.distance_ = (float)convexCallback.m_closestHitFraction * (endPos - startPos).Length();
++        result.hitFraction_ = (float)convexCallback.m_closestHitFraction;
+     }
+     else
+     {
+@@ -924,8 +924,8 @@ void PhysicsWorld::SendCollisionEvents()
+                     btManifoldPoint& point = contactManifold->getContactPoint(j);
+                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
+                     contacts_.WriteVector3(ToVector3(point.m_normalWorldOnB));
+-                    contacts_.WriteFloat(point.m_distance1);
+-                    contacts_.WriteFloat(point.m_appliedImpulse);
++                    contacts_.WriteFloat((float)point.m_distance1);
++                    contacts_.WriteFloat((float)point.m_appliedImpulse);
+                 }
+             }
+             // "Pointers flipped"-manifold, flip normals also
+@@ -937,8 +937,8 @@ void PhysicsWorld::SendCollisionEvents()
+                     btManifoldPoint& point = contactManifold->getContactPoint(j);
+                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
+                     contacts_.WriteVector3(-ToVector3(point.m_normalWorldOnB));
+-                    contacts_.WriteFloat(point.m_distance1);
+-                    contacts_.WriteFloat(point.m_appliedImpulse);
++                    contacts_.WriteFloat((float)point.m_distance1);
++                    contacts_.WriteFloat((float)point.m_appliedImpulse);
+                 }
+             }
+ 
+@@ -985,8 +985,8 @@ void PhysicsWorld::SendCollisionEvents()
+                     btManifoldPoint& point = contactManifold->getContactPoint(j);
+                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
+                     contacts_.WriteVector3(-ToVector3(point.m_normalWorldOnB));
+-                    contacts_.WriteFloat(point.m_distance1);
+-                    contacts_.WriteFloat(point.m_appliedImpulse);
++                    contacts_.WriteFloat((float)point.m_distance1);
++                    contacts_.WriteFloat((float)point.m_appliedImpulse);
+                 }
+             }
+             contactManifold = i->second_.flippedManifold_;
+@@ -997,8 +997,8 @@ void PhysicsWorld::SendCollisionEvents()
+                     btManifoldPoint& point = contactManifold->getContactPoint(j);
+                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
+                     contacts_.WriteVector3(ToVector3(point.m_normalWorldOnB));
+-                    contacts_.WriteFloat(point.m_distance1);
+-                    contacts_.WriteFloat(point.m_appliedImpulse);
++                    contacts_.WriteFloat((float)point.m_distance1);
++                    contacts_.WriteFloat((float)point.m_appliedImpulse);
+                 }
+             }
+ 
+diff --git a/Source/Urho3D/Physics/RaycastVehicle.cpp b/Source/Urho3D/Physics/RaycastVehicle.cpp
+index 5a91d0123..0b0ab6206 100644
+--- a/Source/Urho3D/Physics/RaycastVehicle.cpp
++++ b/Source/Urho3D/Physics/RaycastVehicle.cpp
+@@ -446,7 +446,7 @@ float RaycastVehicle::GetSteeringValue(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_steering;
++    return (float)whInfo.m_steering;
+ }
+ 
+ void RaycastVehicle::SetWheelSuspensionStiffness(int wheel, float stiffness)
+@@ -460,7 +460,7 @@ float RaycastVehicle::GetWheelSuspensionStiffness(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_suspensionStiffness;
++    return (float)whInfo.m_suspensionStiffness;
+ }
+ 
+ void RaycastVehicle::SetWheelMaxSuspensionForce(int wheel, float force)
+@@ -474,7 +474,7 @@ float RaycastVehicle::GetWheelMaxSuspensionForce(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_maxSuspensionForce;
++    return (float)whInfo.m_maxSuspensionForce;
+ }
+ 
+ void RaycastVehicle::SetWheelDampingRelaxation(int wheel, float damping)
+@@ -488,7 +488,7 @@ float RaycastVehicle::GetWheelDampingRelaxation(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_wheelsDampingRelaxation;
++    return (float)whInfo.m_wheelsDampingRelaxation;
+ }
+ 
+ void RaycastVehicle::SetWheelDampingCompression(int wheel, float compression)
+@@ -502,7 +502,7 @@ float RaycastVehicle::GetWheelDampingCompression(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_wheelsDampingCompression;
++    return (float)whInfo.m_wheelsDampingCompression;
+ }
+ 
+ void RaycastVehicle::SetWheelFrictionSlip(int wheel, float slip)
+@@ -516,7 +516,7 @@ float RaycastVehicle::GetWheelFrictionSlip(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_frictionSlip;
++    return (float)whInfo.m_frictionSlip;
+ }
+ 
+ void RaycastVehicle::SetWheelRollInfluence(int wheel, float rollInfluence)
+@@ -549,7 +549,7 @@ float RaycastVehicle::GetWheelRollInfluence(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_rollInfluence;
++    return (float)whInfo.m_rollInfluence;
+ }
+ 
+ void RaycastVehicle::SetWheelRadius(int wheel, float wheelRadius)
+@@ -563,7 +563,7 @@ float RaycastVehicle::GetWheelRadius(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo& whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_wheelsRadius;
++    return (float)whInfo.m_wheelsRadius;
+ }
+ 
+ void RaycastVehicle::SetEngineForce(int wheel, float force)
+@@ -576,7 +576,7 @@ float RaycastVehicle::GetEngineForce(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_engineForce;
++    return (float)whInfo.m_engineForce;
+ }
+ 
+ void RaycastVehicle::SetBrake(int wheel, float force)
+@@ -589,7 +589,7 @@ float RaycastVehicle::GetBrake(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_brake;
++    return (float)whInfo.m_brake;
+ }
+ 
+ int RaycastVehicle::GetNumWheels() const
+@@ -614,7 +614,7 @@ float RaycastVehicle::GetMaxSuspensionTravel(int wheel)
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_maxSuspensionTravelCm;
++    return (float)whInfo.m_maxSuspensionTravelCm;
+ }
+ 
+ void RaycastVehicle::SetWheelDirection(int wheel, Vector3 direction)
+@@ -658,7 +658,7 @@ float RaycastVehicle::GetWheelRestLength(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo& whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_suspensionRestLength1;
++    return (float)whInfo.m_suspensionRestLength1;
+ }
+ 
+ void RaycastVehicle::SetWheelSkidInfo(int wheel, float factor)
+@@ -672,7 +672,7 @@ float RaycastVehicle::GetWheelSkidInfo(int wheel) const
+ {
+     btRaycastVehicle* vehicle = vehicleData_->Get();
+     btWheelInfo& whInfo = vehicle->getWheelInfo(wheel);
+-    return whInfo.m_skidInfo;
++    return (float)whInfo.m_skidInfo;
+ }
+ 
+ bool RaycastVehicle::IsFrontWheel(int wheel) const
+diff --git a/Source/Urho3D/Physics/RigidBody.cpp b/Source/Urho3D/Physics/RigidBody.cpp
+index 5297c45a4..c92ad099c 100644
+--- a/Source/Urho3D/Physics/RigidBody.cpp
++++ b/Source/Urho3D/Physics/RigidBody.cpp
+@@ -115,7 +115,7 @@ void RigidBody::RegisterObject(Context* context)
+     URHO3D_ACCESSOR_ATTRIBUTE("Angular Rest Threshold", GetAngularRestThreshold, SetAngularRestThreshold, float, 1.0f, AM_DEFAULT);
+     URHO3D_ATTRIBUTE_EX("Collision Layer", int, collisionLayer_, MarkBodyDirty, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
+     URHO3D_ATTRIBUTE_EX("Collision Mask", int, collisionMask_, MarkBodyDirty, DEFAULT_COLLISION_MASK, AM_DEFAULT);
+-    URHO3D_ACCESSOR_ATTRIBUTE("Contact Threshold", GetContactProcessingThreshold, SetContactProcessingThreshold, float, BT_LARGE_FLOAT,
++    URHO3D_ACCESSOR_ATTRIBUTE("Contact Threshold", GetContactProcessingThreshold, SetContactProcessingThreshold, float, float(BT_LARGE_FLOAT),
+         AM_DEFAULT);
+     URHO3D_ACCESSOR_ATTRIBUTE("CCD Radius", GetCcdRadius, SetCcdRadius, float, 0.0f, AM_DEFAULT);
+     URHO3D_ACCESSOR_ATTRIBUTE("CCD Motion Threshold", GetCcdMotionThreshold, SetCcdMotionThreshold, float, 0.0f, AM_DEFAULT);
+@@ -632,12 +632,12 @@ Vector3 RigidBody::GetVelocityAtPoint(const Vector3& position) const
+ 
+ float RigidBody::GetLinearRestThreshold() const
+ {
+-    return body_ ? body_->getLinearSleepingThreshold() : 0.0f;
++    return body_ ? (float)body_->getLinearSleepingThreshold() : 0.0f;
+ }
+ 
+ float RigidBody::GetLinearDamping() const
+ {
+-    return body_ ? body_->getLinearDamping() : 0.0f;
++    return body_ ? (float)body_->getLinearDamping() : 0.0f;
+ }
+ 
+ Vector3 RigidBody::GetAngularVelocity() const
+@@ -652,17 +652,17 @@ Vector3 RigidBody::GetAngularFactor() const
+ 
+ float RigidBody::GetAngularRestThreshold() const
+ {
+-    return body_ ? body_->getAngularSleepingThreshold() : 0.0f;
++    return body_ ? (float)body_->getAngularSleepingThreshold() : 0.0f;
+ }
+ 
+ float RigidBody::GetAngularDamping() const
+ {
+-    return body_ ? body_->getAngularDamping() : 0.0f;
++    return body_ ? (float)body_->getAngularDamping() : 0.0f;
+ }
+ 
+ float RigidBody::GetFriction() const
+ {
+-    return body_ ? body_->getFriction() : 0.0f;
++    return body_ ? (float)body_->getFriction() : 0.0f;
+ }
+ 
+ Vector3 RigidBody::GetAnisotropicFriction() const
+@@ -672,27 +672,27 @@ Vector3 RigidBody::GetAnisotropicFriction() const
+ 
+ float RigidBody::GetRollingFriction() const
+ {
+-    return body_ ? body_->getRollingFriction() : 0.0f;
++    return body_ ? (float)body_->getRollingFriction() : 0.0f;
+ }
+ 
+ float RigidBody::GetRestitution() const
+ {
+-    return body_ ? body_->getRestitution() : 0.0f;
++    return body_ ? (float)body_->getRestitution() : 0.0f;
+ }
+ 
+ float RigidBody::GetContactProcessingThreshold() const
+ {
+-    return body_ ? body_->getContactProcessingThreshold() : 0.0f;
++    return body_ ? (float)body_->getContactProcessingThreshold() : 0.0f;
+ }
+ 
+ float RigidBody::GetCcdRadius() const
+ {
+-    return body_ ? body_->getCcdSweptSphereRadius() : 0.0f;
++    return body_ ? (float)body_->getCcdSweptSphereRadius() : 0.0f;
+ }
+ 
+ float RigidBody::GetCcdMotionThreshold() const
+ {
+-    return body_ ? body_->getCcdMotionThreshold() : 0.0f;
++    return body_ ? (float)body_->getCcdMotionThreshold() : 0.0f;
+ }
+ 
+ bool RigidBody::IsActive() const
+@@ -749,7 +749,7 @@ void RigidBody::UpdateMass()
+     auto numShapes = (unsigned)compoundShape_->getNumChildShapes();
+     if (numShapes)
+     {
+-        PODVector<float> masses(numShapes);
++        PODVector<btScalar> masses(numShapes);
+         for (unsigned i = 0; i < numShapes; ++i)
+         {
+             // The actual mass does not matter, divide evenly between child shapes
+diff --git a/bin/Data/Scripts/Editor/EditorView.as b/bin/Data/Scripts/Editor/EditorView.as
+index 7334f85ac..a5ec0c127 100644
+--- a/bin/Data/Scripts/Editor/EditorView.as
++++ b/bin/Data/Scripts/Editor/EditorView.as
+@@ -918,16 +918,24 @@ void SetViewportMode(uint mode = VIEWPORT_SINGLE)
+         // Create viewport on center of window
+         {
+             uint viewport = 0;
+-            ViewportContext@ vc = ViewportContext(
+-                IntRect(
++            IntRect vr = IntRect(
+                     (secondaryToolBar.width + hierarchyWindow.width) - 1,
+                     toolBar.height + uiMenuBar.height,
+-                    viewportArea.width-attributeInspectorWindow.width,
+-                    viewportArea.height),
++                    viewportArea.width-attributeInspectorWindow.width - hierarchyWindow.width,
++                    viewportArea.height);
++            ViewportContext@ vc = ViewportContext(
++                vr,
+                 viewports.length + 1,
+                 viewportMode & (VIEWPORT_TOP|VIEWPORT_LEFT|VIEWPORT_TOP_LEFT)
+             );
+             viewports.Push(vc);
++            
++            if (editorUIElement != null)
++            {
++                editorUIElement.SetSize(viewportArea.width-attributeInspectorWindow.width, viewportArea.height);
++                
++                editorUIElement.SetPosition(vr.left,vr.top);
++            }
+         }
+         viewportMode = mode;
+ 

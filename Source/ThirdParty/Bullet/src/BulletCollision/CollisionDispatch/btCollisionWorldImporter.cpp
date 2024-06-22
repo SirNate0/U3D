@@ -451,6 +451,8 @@ btCollisionShape* btCollisionWorldImporter::convertCollisionShape(btCollisionSha
 							tmpPoints[i].deSerialize(convexData->m_unscaledPointsDoublePtr[i]);
 						if (convexData->m_unscaledPointsFloatPtr)
 							tmpPoints[i].deSerializeFloat(convexData->m_unscaledPointsFloatPtr[i]);
+#elif defined(BT_USE_FIXED_PRECISION)
+                        //TODO
 #else
 						if (convexData->m_unscaledPointsFloatPtr)
 							tmpPoints[i].deSerialize(convexData->m_unscaledPointsFloatPtr[i]);

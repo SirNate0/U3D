@@ -103,6 +103,7 @@ btScalar btTypedConstraint::getMotorFactor(btScalar pos, btScalar lowLim, btScal
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 const char* btTypedConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btTypedConstraintData2* tcd = (btTypedConstraintData2*)dataBuffer;
 
 	tcd->m_rbA = (btRigidBodyData*)serializer->getUniquePointer(&m_rbA);
@@ -135,7 +136,7 @@ const char* btTypedConstraint::serialize(void* dataBuffer, btSerializer* seriali
 	for (i = 0; i < m_rbB.getNumConstraintRefs(); i++)
 		if (m_rbB.getConstraintRef(i) == this)
 			tcd->m_disableCollisionsBetweenLinkedBodies = true;
-
+#endif
 	return btTypedConstraintDataName;
 }
 

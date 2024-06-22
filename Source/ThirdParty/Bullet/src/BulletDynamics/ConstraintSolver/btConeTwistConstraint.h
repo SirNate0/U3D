@@ -403,6 +403,7 @@ SIMD_FORCE_INLINE int btConeTwistConstraint::calculateSerializeBufferSize() cons
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 SIMD_FORCE_INLINE const char* btConeTwistConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btConeTwistConstraintData2* cone = (btConeTwistConstraintData2*)dataBuffer;
 	btTypedConstraint::serialize(&cone->m_typeConstraintData, serializer);
 
@@ -416,7 +417,9 @@ SIMD_FORCE_INLINE const char* btConeTwistConstraint::serialize(void* dataBuffer,
 	cone->m_biasFactor = m_biasFactor;
 	cone->m_relaxationFactor = m_relaxationFactor;
 	cone->m_damping = m_damping;
-
+#else
+    //TODO
+#endif
 	return btConeTwistConstraintDataName;
 }
 

@@ -39,6 +39,8 @@ const btSimdFloat4 ATTRIBUTE_ALIGNED16(v0010) = {0.0f, 0.0f, 1.0f, 0.0f};
 
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btMatrix3x3Data btMatrix3x3DoubleData
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btMatrix3x3Data btMatrix3x3FixedData
 #else
 #define btMatrix3x3Data btMatrix3x3FloatData
 #endif  //BT_USE_DOUBLE_PRECISION
@@ -1396,6 +1398,12 @@ struct btMatrix3x3FloatData
 struct btMatrix3x3DoubleData
 {
 	btVector3DoubleData m_el[3];
+};
+
+///for serialization
+struct btMatrix3x3FixedData
+{
+    btVector3FixedData m_el[3];
 };
 
 SIMD_FORCE_INLINE void btMatrix3x3::serialize(struct btMatrix3x3Data& dataOut) const

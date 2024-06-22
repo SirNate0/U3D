@@ -95,7 +95,7 @@ public:
 				const btSoftBody::Node& node = psb->m_nodes[j];
 				if (node.m_im > 0)
 				{
-					e -= m_gravity.dot(node.m_q) / node.m_im;
+                    e -= double(m_gravity.dot(node.m_q) / node.m_im);
 				}
 			}
 		}

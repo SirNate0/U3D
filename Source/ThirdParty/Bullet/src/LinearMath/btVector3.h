@@ -25,6 +25,9 @@ subject to the following restrictions:
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btVector3Data btVector3DoubleData
 #define btVector3DataName "btVector3DoubleData"
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btVector3Data btVector3FixedData
+#define btVector3DataName "btVector3FixedData"
 #else
 #define btVector3Data btVector3FloatData
 #define btVector3DataName "btVector3FloatData"
@@ -258,7 +261,11 @@ public:
 	/**@brief Return the length of the vector */
 	SIMD_FORCE_INLINE btScalar length() const
 	{
+#ifndef BT_USE_FIXED_PRECISION
 		return btSqrt(length2());
+#else
+        return fpm::hypot(m_floats[0],m_floats[1],m_floats[2]);
+#endif
 	}
 
 	/**@brief Return the norm (length) of the vector */
@@ -270,11 +277,15 @@ public:
 	/**@brief Return the norm (length) of the vector */
 	SIMD_FORCE_INLINE btScalar safeNorm() const
 	{
+#ifndef BT_USE_FIXED_PRECISION
 		btScalar d = length2();
 		//workaround for some clang/gcc issue of sqrtf(tiny number) = -INF
 		if (d > SIMD_EPSILON)
 			return btSqrt(d);
 		return btScalar(0);
+#else
+        return fpm::hypot(m_floats[0],m_floats[1],m_floats[2]);
+#endif
 	}
 
 	/**@brief Return the distance squared between the ends of this and another vector
@@ -697,6 +708,8 @@ public:
 	SIMD_FORCE_INLINE void deSerialize(const struct btVector3DoubleData& dataIn);
 
 	SIMD_FORCE_INLINE void deSerialize(const struct btVector3FloatData& dataIn);
+
+    SIMD_FORCE_INLINE void deSerialize(const struct btVector3FixedData& dataIn);
 
 	SIMD_FORCE_INLINE void serializeFloat(struct btVector3FloatData & dataOut) const;
 
@@ -1296,6 +1309,11 @@ struct btVector3DoubleData
 	double m_floats[4];
 };
 
+struct btVector3FixedData
+{
+    fpm::fixed_16_16 m_floats[4];
+};
+
 SIMD_FORCE_INLINE void btVector3::serializeFloat(struct btVector3FloatData& dataOut) const
 {
 	///could also do a memcpy, check if it is worth it
@@ -1339,6 +1357,12 @@ SIMD_FORCE_INLINE void btVector3::deSerialize(const struct btVector3DoubleData& 
 {
 	for (int i = 0; i < 4; i++)
 		m_floats[i] = (btScalar)dataIn.m_floats[i];
+}
+
+SIMD_FORCE_INLINE void btVector3::deSerialize(const struct btVector3FixedData& dataIn)
+{
+    for (int i = 0; i < 4; i++)
+        m_floats[i] = (btScalar)dataIn.m_floats[i];
 }
 
 #endif  //BT_VECTOR3_H

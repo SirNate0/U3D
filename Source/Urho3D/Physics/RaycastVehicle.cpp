@@ -446,7 +446,7 @@ float RaycastVehicle::GetSteeringValue(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_steering;
+    return (float)whInfo.m_steering;
 }
 
 void RaycastVehicle::SetWheelSuspensionStiffness(int wheel, float stiffness)
@@ -460,7 +460,7 @@ float RaycastVehicle::GetWheelSuspensionStiffness(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_suspensionStiffness;
+    return (float)whInfo.m_suspensionStiffness;
 }
 
 void RaycastVehicle::SetWheelMaxSuspensionForce(int wheel, float force)
@@ -474,7 +474,7 @@ float RaycastVehicle::GetWheelMaxSuspensionForce(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_maxSuspensionForce;
+    return (float)whInfo.m_maxSuspensionForce;
 }
 
 void RaycastVehicle::SetWheelDampingRelaxation(int wheel, float damping)
@@ -488,7 +488,7 @@ float RaycastVehicle::GetWheelDampingRelaxation(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_wheelsDampingRelaxation;
+    return (float)whInfo.m_wheelsDampingRelaxation;
 }
 
 void RaycastVehicle::SetWheelDampingCompression(int wheel, float compression)
@@ -502,7 +502,7 @@ float RaycastVehicle::GetWheelDampingCompression(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_wheelsDampingCompression;
+    return (float)whInfo.m_wheelsDampingCompression;
 }
 
 void RaycastVehicle::SetWheelFrictionSlip(int wheel, float slip)
@@ -516,7 +516,7 @@ float RaycastVehicle::GetWheelFrictionSlip(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_frictionSlip;
+    return (float)whInfo.m_frictionSlip;
 }
 
 void RaycastVehicle::SetWheelRollInfluence(int wheel, float rollInfluence)
@@ -549,7 +549,7 @@ float RaycastVehicle::GetWheelRollInfluence(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_rollInfluence;
+    return (float)whInfo.m_rollInfluence;
 }
 
 void RaycastVehicle::SetWheelRadius(int wheel, float wheelRadius)
@@ -563,7 +563,7 @@ float RaycastVehicle::GetWheelRadius(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo& whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_wheelsRadius;
+    return (float)whInfo.m_wheelsRadius;
 }
 
 void RaycastVehicle::SetEngineForce(int wheel, float force)
@@ -576,7 +576,7 @@ float RaycastVehicle::GetEngineForce(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_engineForce;
+    return (float)whInfo.m_engineForce;
 }
 
 void RaycastVehicle::SetBrake(int wheel, float force)
@@ -589,7 +589,7 @@ float RaycastVehicle::GetBrake(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_brake;
+    return (float)whInfo.m_brake;
 }
 
 int RaycastVehicle::GetNumWheels() const
@@ -614,7 +614,7 @@ float RaycastVehicle::GetMaxSuspensionTravel(int wheel)
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_maxSuspensionTravelCm;
+    return (float)whInfo.m_maxSuspensionTravelCm;
 }
 
 void RaycastVehicle::SetWheelDirection(int wheel, Vector3 direction)
@@ -658,7 +658,7 @@ float RaycastVehicle::GetWheelRestLength(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo& whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_suspensionRestLength1;
+    return (float)whInfo.m_suspensionRestLength1;
 }
 
 void RaycastVehicle::SetWheelSkidInfo(int wheel, float factor)
@@ -672,7 +672,7 @@ float RaycastVehicle::GetWheelSkidInfo(int wheel) const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
     btWheelInfo& whInfo = vehicle->getWheelInfo(wheel);
-    return whInfo.m_skidInfo;
+    return (float)whInfo.m_skidInfo;
 }
 
 bool RaycastVehicle::IsFrontWheel(int wheel) const

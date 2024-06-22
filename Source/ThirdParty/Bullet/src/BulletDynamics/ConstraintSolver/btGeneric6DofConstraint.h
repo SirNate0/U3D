@@ -591,6 +591,7 @@ SIMD_FORCE_INLINE int btGeneric6DofConstraint::calculateSerializeBufferSize() co
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 SIMD_FORCE_INLINE const char* btGeneric6DofConstraint::serialize(void* dataBuffer, btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btGeneric6DofConstraintData2* dof = (btGeneric6DofConstraintData2*)dataBuffer;
 	btTypedConstraint::serialize(&dof->m_typeConstraintData, serializer);
 
@@ -608,7 +609,7 @@ SIMD_FORCE_INLINE const char* btGeneric6DofConstraint::serialize(void* dataBuffe
 
 	dof->m_useLinearReferenceFrameA = m_useLinearReferenceFrameA ? 1 : 0;
 	dof->m_useOffsetForConstraintFrame = m_useOffsetForConstraintFrame ? 1 : 0;
-
+#endif
 	return btGeneric6DofConstraintDataName;
 }
 

@@ -1089,7 +1089,7 @@ void btGeneric6DofSpring2Constraint::setServoTarget(int index, btScalar targetOr
 		btScalar target = targetOrg + SIMD_PI;
 		if (1)
 		{
-			btScalar m = target - SIMD_2_PI * std::floor(target / SIMD_2_PI);
+            btScalar m = target - SIMD_2_PI * btFloor(target / SIMD_2_PI);
 			// handle boundary cases resulted from floating-point cut off:
 			{
 				if (m >= SIMD_2_PI)

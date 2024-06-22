@@ -26,6 +26,9 @@ subject to the following restrictions:
 #include "LinearMath/btConvexHullComputer.h"
 #include <map>
 #include <vector>
+#ifdef BT_USE_FIXED_PRECISION
+#include "LinearMath/fixedios.hpp"
+#endif
 
 static void drawVertex(btIDebugDraw* idraw,
 					   const btVector3& x, btScalar s, const btVector3& c)

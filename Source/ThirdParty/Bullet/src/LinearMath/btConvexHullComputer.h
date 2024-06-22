@@ -97,6 +97,11 @@ public:
 	{
 		return compute(coords, true, stride, count, shrink, shrinkClamp);
 	}
+
+#ifdef BT_USE_FIXED_PRECISION
+    // same as above, but fixed point precision
+    btScalar compute(const btScalar* coords, int stride, int count, btScalar shrink, btScalar shrinkClamp);
+#endif
 };
 
 #endif  //BT_CONVEX_HULL_COMPUTER_H

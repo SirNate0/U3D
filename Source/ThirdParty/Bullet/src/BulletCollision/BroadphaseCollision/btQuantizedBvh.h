@@ -35,6 +35,10 @@ class btSerializer;
 #define btQuantizedBvhData btQuantizedBvhDoubleData
 #define btOptimizedBvhNodeData btOptimizedBvhNodeDoubleData
 #define btQuantizedBvhDataName "btQuantizedBvhDoubleData"
+#elif defined(BT_USE_FIXED_PRECISION)
+#define btQuantizedBvhData btQuantizedBvhFixedData
+#define btOptimizedBvhNodeData btOptimizedBvhNodeFixedData
+#define btQuantizedBvhDataName "btQuantizedBvhFixedData"
 #else
 #define btQuantizedBvhData btQuantizedBvhFloatData
 #define btOptimizedBvhNodeData btOptimizedBvhNodeFloatData
@@ -492,6 +496,16 @@ struct btOptimizedBvhNodeDoubleData
 	char m_pad[4];
 };
 
+struct btOptimizedBvhNodeFixedData
+{
+    btVector3FixedData m_aabbMinOrg;
+    btVector3FixedData m_aabbMaxOrg;
+    int m_escapeIndex;
+    int m_subPart;
+    int m_triangleIndex;
+    char m_pad[4];
+};
+
 
 struct btQuantizedBvhNodeData
 {
@@ -532,6 +546,24 @@ struct	btQuantizedBvhDoubleData
 	int							m_traversalMode;
 	int							m_numSubtreeHeaders;
 	btBvhSubtreeInfoData		*m_subTreeInfoPtr;
+};
+
+
+struct	btQuantizedBvhFixedData
+{
+    btVector3FixedData			m_bvhAabbMin;
+    btVector3FixedData			m_bvhAabbMax;
+    btVector3FixedData			m_bvhQuantization;
+    int					m_curNodeIndex;
+    int					m_useQuantization;
+    int					m_numContiguousLeafNodes;
+    int					m_numQuantizedContiguousNodes;
+    btOptimizedBvhNodeFixedData	*m_contiguousNodesPtr;
+    btQuantizedBvhNodeData		*m_quantizedContiguousNodesPtr;
+    btBvhSubtreeInfoData	*m_subTreeInfoPtr;
+    int					m_traversalMode;
+    int					m_numSubtreeHeaders;
+
 };
 // clang-format on
 

@@ -100,7 +100,7 @@ bool btContinuousConvexCollision::calcTimeOfImpact(
 	btTransformUtil::calculateVelocity(fromB, toB, btScalar(1.), linVelB, angVelB);
 
 	btScalar boundingRadiusA = m_convexA->getAngularMotionDisc();
-	btScalar boundingRadiusB = m_convexB1 ? m_convexB1->getAngularMotionDisc() : 0.f;
+    btScalar boundingRadiusB = m_convexB1 ? m_convexB1->getAngularMotionDisc() : btScalar(0);
 
 	btScalar maxAngularProjectedVelocity = angVelA.length() * boundingRadiusA + angVelB.length() * boundingRadiusB;
 	btVector3 relLinVel = (linVelB - linVelA);

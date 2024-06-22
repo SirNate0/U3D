@@ -68,12 +68,12 @@ static bool CompareRaycastResults(const PhysicsRaycastResult& lhs, const Physics
 
 void InternalPreTickCallback(btDynamicsWorld* world, btScalar timeStep)
 {
-    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PreStep(timeStep);
+    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PreStep((float)timeStep);
 }
 
 void InternalTickCallback(btDynamicsWorld* world, btScalar timeStep)
 {
-    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PostStep(timeStep);
+    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PostStep((float)timeStep);
 }
 
 static bool CustomMaterialCombinerCallback(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0,
@@ -223,7 +223,7 @@ bool PhysicsWorld::isVisible(const btVector3& aabbMin, const btVector3& aabbMax)
 void PhysicsWorld::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
 {
     if (debugRenderer_)
-        debugRenderer_->AddLine(ToVector3(from), ToVector3(to), Color(color.x(), color.y(), color.z()), debugDepthTest_);
+        debugRenderer_->AddLine(ToVector3(from), ToVector3(to), Color((float)color.x(), (float)color.y(), (float)color.z()), debugDepthTest_);
 }
 
 void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -390,7 +390,7 @@ void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& r
         newResult.position_ = ToVector3(rayCallback.m_hitPointWorld[i]);
         newResult.normal_ = ToVector3(rayCallback.m_hitNormalWorld[i]);
         newResult.distance_ = (newResult.position_ - ray.origin_).Length();
-        newResult.hitFraction_ = rayCallback.m_closestHitFraction;
+        newResult.hitFraction_ = (float)rayCallback.m_closestHitFraction;
         result.Push(newResult);
     }
 
@@ -416,7 +416,7 @@ void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, f
         result.position_ = ToVector3(rayCallback.m_hitPointWorld);
         result.normal_ = ToVector3(rayCallback.m_hitNormalWorld);
         result.distance_ = (result.position_ - ray.origin_).Length();
-        result.hitFraction_ = rayCallback.m_closestHitFraction;
+        result.hitFraction_ = (float)rayCallback.m_closestHitFraction;
         result.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObject->getUserPointer());
     }
     else
@@ -462,7 +462,7 @@ void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ra
             result.position_ = ToVector3(rayCallback.m_hitPointWorld);
             result.normal_ = ToVector3(rayCallback.m_hitNormalWorld);
             result.distance_ = (result.position_ - ray.origin_).Length();
-            result.hitFraction_ = rayCallback.m_closestHitFraction;
+            result.hitFraction_ = (float)rayCallback.m_closestHitFraction;
             result.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObject->getUserPointer());
             // No need to cast the rest of the segments
             return;
@@ -504,8 +504,8 @@ void PhysicsWorld::SphereCast(PhysicsRaycastResult& result, const Ray& ray, floa
         result.body_ = static_cast<RigidBody*>(convexCallback.m_hitCollisionObject->getUserPointer());
         result.position_ = ToVector3(convexCallback.m_hitPointWorld);
         result.normal_ = ToVector3(convexCallback.m_hitNormalWorld);
-        result.distance_ = convexCallback.m_closestHitFraction * (endPos - ray.origin_).Length();
-        result.hitFraction_ = convexCallback.m_closestHitFraction;
+        result.distance_ = (float)convexCallback.m_closestHitFraction * (endPos - ray.origin_).Length();
+        result.hitFraction_ = (float)convexCallback.m_closestHitFraction;
     }
     else
     {
@@ -598,8 +598,8 @@ void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, btCollisionShape* sh
         result.body_ = static_cast<RigidBody*>(convexCallback.m_hitCollisionObject->getUserPointer());
         result.position_ = ToVector3(convexCallback.m_hitPointWorld);
         result.normal_ = ToVector3(convexCallback.m_hitNormalWorld);
-        result.distance_ = convexCallback.m_closestHitFraction * (endPos - startPos).Length();
-        result.hitFraction_ = convexCallback.m_closestHitFraction;
+        result.distance_ = (float)convexCallback.m_closestHitFraction * (endPos - startPos).Length();
+        result.hitFraction_ = (float)convexCallback.m_closestHitFraction;
     }
     else
     {
@@ -924,8 +924,8 @@ void PhysicsWorld::SendCollisionEvents()
                     btManifoldPoint& point = contactManifold->getContactPoint(j);
                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
                     contacts_.WriteVector3(ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
+                    contacts_.WriteFloat((float)point.m_distance1);
+                    contacts_.WriteFloat((float)point.m_appliedImpulse);
                 }
             }
             // "Pointers flipped"-manifold, flip normals also
@@ -937,8 +937,8 @@ void PhysicsWorld::SendCollisionEvents()
                     btManifoldPoint& point = contactManifold->getContactPoint(j);
                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
                     contacts_.WriteVector3(-ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
+                    contacts_.WriteFloat((float)point.m_distance1);
+                    contacts_.WriteFloat((float)point.m_appliedImpulse);
                 }
             }
 
@@ -985,8 +985,8 @@ void PhysicsWorld::SendCollisionEvents()
                     btManifoldPoint& point = contactManifold->getContactPoint(j);
                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
                     contacts_.WriteVector3(-ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
+                    contacts_.WriteFloat((float)point.m_distance1);
+                    contacts_.WriteFloat((float)point.m_appliedImpulse);
                 }
             }
             contactManifold = i->second_.flippedManifold_;
@@ -997,8 +997,8 @@ void PhysicsWorld::SendCollisionEvents()
                     btManifoldPoint& point = contactManifold->getContactPoint(j);
                     contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
                     contacts_.WriteVector3(ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
+                    contacts_.WriteFloat((float)point.m_distance1);
+                    contacts_.WriteFloat((float)point.m_appliedImpulse);
                 }
             }
 

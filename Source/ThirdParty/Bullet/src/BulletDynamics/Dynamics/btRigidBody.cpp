@@ -464,6 +464,7 @@ int btRigidBody::calculateSerializeBufferSize() const
 ///fills the dataBuffer and returns the struct name (and 0 on failure)
 const char* btRigidBody::serialize(void* dataBuffer, class btSerializer* serializer) const
 {
+#ifndef BT_USE_FIXED_PRECISION
 	btRigidBodyData* rbd = (btRigidBodyData*)dataBuffer;
 
 	btCollisionObject::serialize(&rbd->m_collisionObjectData, serializer);
@@ -493,7 +494,7 @@ const char* btRigidBody::serialize(void* dataBuffer, class btSerializer* seriali
 #ifdef BT_USE_DOUBLE_PRECISION
 	memset(rbd->m_padding, 0, sizeof(rbd->m_padding));
 #endif
-
+#endif
 	return btRigidBodyDataName;
 }
 
